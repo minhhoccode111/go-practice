@@ -15,5 +15,5 @@ git clone git@github.com:minhhoccode111/go-practice.git ~/project/go-practice/
 Create symbolic link for Exercism directory
 
 ```sh
-ln -sf ~/project/go-practice/go-exercism/ go
+ln -sf ~/project/go-practice/exercism-go/ ~/exercism/go
 ```
