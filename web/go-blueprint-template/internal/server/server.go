@@ -9,7 +9,7 @@ import (
 
 	_ "github.com/joho/godotenv/autoload"
 
-	"web-example-go/internal/database"
+	"go-blueprint-template/internal/database"
 )
 
 type Server struct {

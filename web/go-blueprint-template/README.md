@@ -1,4 +1,4 @@
-# Project web-example-go
+# Project go-blueprint-template
 
 One Paragraph of project description goes here
 
