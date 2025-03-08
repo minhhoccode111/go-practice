@@ -1,4 +1,4 @@
-module exercise-images
+module go-practice/a-tour-of-go/methods-and-interfaces/25-exercise-images
 
 go 1.23.6
 

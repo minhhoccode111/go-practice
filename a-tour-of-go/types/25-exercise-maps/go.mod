@@ -1,4 +1,4 @@
-module exercise-maps
+module go-practice/a-tour-of-go/types/25-exercise-maps
 
 go 1.23.6
 

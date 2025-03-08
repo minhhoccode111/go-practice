@@ -1,4 +1,4 @@
-module exercise-equivalent-binary-tree
+module go-practice/a-tour-of-go/concurrency/7-exercise-equivalent-binary-trees
 
 go 1.24.0
 
