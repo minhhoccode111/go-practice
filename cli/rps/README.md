@@ -1,14 +1,17 @@
 # Simple Rock, Paper, Scissors Game
 
-Concepts practice:
+Concepts:
 
 - User input
 - Print output
 - Random
-- Maps
-- Variables
-- Strings
-- Functions
-- Switch
-- Pointers
+- Short If
+- Map
+- Variable
+- String
+- String interpolation
+- Function
+- Anonymous Function
+- Switch case
+- Pointer
 - etc.
