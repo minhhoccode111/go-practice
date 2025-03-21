@@ -1,0 +1,473 @@
+---
+layout: post
+date: 2025-03-21
+title: Personal Site
+details:
+hascontent: false
+repourl: https://github.com/minhhoccode111/minhhoccode111
+demourl:
+noteurl:
+---
+
+---
+layout: post
+date: 2025-03-20
+title: Game Management
+details: C# .NET Razor SQL Server EF Core Bootstrap Azure
+hascontent: false
+repourl: https://github.com/minhhoccode111/game-management
+demourl:
+noteurl:
+---
+
+---
+layout: post
+date: 2025-03-18
+title: Dotfiles
+details: Linux Bash Git Vim Tmux Kitty Alacritty Ghostty
+hascontent: false
+repourl: https://github.com/minhhoccode111/dotfiles
+demourl:
+noteurl:
+---
+
+---
+layout: post
+date: 2025-03-16
+title: DSA
+details: DSA
+hascontent: false
+repourl: https://github.com/minhhoccode111/data-structures-and-algorithms
+demourl:
+noteurl:
+---
+
+---
+layout: post
+date: 2025-03-15
+title: OSTEP
+details: OS
+hascontent: false
+repourl: https://github.com/minhhoccode111/ostep
+demourl:
+noteurl:
+---
+
+---
+layout: post
+date: 2025-03-14
+title: Missing Semester
+details: Linux
+hascontent: false
+repourl: https://github.com/minhhoccode111/missing-semester-mit
+demourl:
+noteurl:
+---
+
+---
+layout: post
+date: 2025-03-13
+title: CS50x
+details: CS DSA
+hascontent: false
+repourl: https://github.com/minhhoccode111/cs50x
+demourl:
+noteurl:
+---
+
+---
+layout: post
+date: 2025-03-12
+title: Fakebook Messing
+details: "Back: Express Mongo Mongoose Passport JWT Rest.nvim Glitch TDD Bun Supertest Mongodb memory server | Front: TS React React Router Shadcn Tailwind Zustand React Form Zod Axios Vite Vercel"
+hascontent: false
+repourl: https://github.com/minhhoccode111/fakebook-messing
+demourl: https://fakebookmessing.vercel.app
+noteurl:
+---
+
+---
+layout: post
+date: 2025-03-11
+title: Nvim
+details: Nvim Lua
+hascontent: false
+repourl: https://github.com/minhhoccode111/nvim
+demourl:
+noteurl:
+---
+
+---
+layout: post
+date: 2025-03-10
+title: Messaging App
+details: "Back: Express Mongo Mongoose Passport JWT Postman Glitch TDD Jest Supertest Mongodb memory server | Front: React React Router Tailwind Zustand Vite Vercel"
+hascontent: false
+repourl: https://github.com/minhhoccode111/messaging-app
+demourl: https://messagingapptop.vercel.app
+noteurl:
+---
+
+---
+layout: post
+date: 2025-03-09
+title: Where's Waldo Front
+details: React React Router Tailwind Vite Vercel
+hascontent: false
+repourl: https://github.com/minhhoccode111/wheres-waldo-front
+demourl: https://whereswaldotop.vercel.app
+noteurl:
+---
+
+---
+layout: post
+date: 2025-03-08
+title: Where's Waldo Back
+details: Express Mongo Mongoose Postman Glitch
+hascontent: false
+repourl: https://github.com/minhhoccode111/wheres-waldo-back
+demourl:
+noteurl:
+---
+
+---
+layout: post
+date: 2025-03-07
+title: Members Only
+details: Express Mongo Mongoose Passport Pug Tailwind Glitch
+hascontent: false
+repourl: https://github.com/minhhoccode111/members-only-top
+demourl: https://membersonlytop.glitch.me/
+noteurl:
+---
+
+---
+layout: post
+date: 2025-03-06
+title: Inventory App
+details: Express Mongo Mongoose Multer Pug Tailwind Glitch
+hascontent: false
+repourl: https://github.com/minhhoccode111/inventory-application-top
+demourl: https://inventoryapplicationtop.glitch.me/
+noteurl:
+---
+
+---
+layout: post
+date: 2025-03-05
+title: Local Library
+details: Express Mongo Mongoose Pug Bootstrap Glitch
+hascontent: false
+repourl: https://github.com/minhhoccode111/local-library-mdn-be
+demourl: https://locallibrarymdnbe.glitch.me/
+noteurl:
+---
+
+---
+layout: post
+date: 2025-03-04
+title: Mini Message Board
+details: Express Pug CSS Glitch
+hascontent: false
+repourl: https://github.com/minhhoccode111/mini-message-board-top
+demourl: https://minimessageboardtop.glitch.me
+noteurl:
+---
+
+---
+layout: post
+date: 2025-03-03
+title: Basic Info Site
+details: Node HTML
+hascontent: false
+repourl: https://github.com/minhhoccode111/basic-information-site-top
+demourl:
+noteurl:
+---
+
+---
+layout: post
+date: 2025-03-02
+title: Shopping Cart
+details: TS React React Router Tailwind Quotable-api Vite Netlify
+hascontent: false
+repourl: https://github.com/minhhoccode111/shopping-cart-top/
+demourl: https://vaiquyensach.netlify.app/
+noteurl:
+---
+
+---
+layout: post
+date: 2025-03-01
+title: Content Savior
+details: React React Router Tailwind Vite Netlify
+hascontent: false
+repourl: https://github.com/minhhoccode111/content-savior/
+demourl: https://contentsavior.netlify.app/
+noteurl:
+---
+
+---
+layout: post
+date: 2025-02-28
+title: Memory Card
+details: React Tailwind Vite Netlify
+hascontent: false
+repourl: https://github.com/minhhoccode111/memory-card-top
+demourl: https://uniquepokemon.netlify.app/
+noteurl:
+---
+
+---
+layout: post
+date: 2025-02-27
+title: CV Application
+details: TS React Tailwind Vite Netlify
+hascontent: false
+repourl: https://github.com/minhhoccode111/cv-application-top
+demourl: https://cvapplicationtop.netlify.app/
+noteurl:
+---
+
+---
+layout: post
+date: 2025-02-26
+title: Go Practice
+details: Go
+hascontent: false
+repourl: https://github.com/minhhoccode111/go-practice
+demourl:
+noteurl:
+---
+
+---
+layout: post
+date: 2025-02-25
+title: Dart Exercism
+details: Dart
+hascontent: false
+repourl: https://github.com/minhhoccode111/dart-exercism
+demourl:
+noteurl:
+---
+
+---
+layout: post
+date: 2025-02-24
+title: CSharp Exercism
+details: C#
+hascontent: false
+repourl: https://github.com/minhhoccode111/csharp-exercism
+demourl:
+noteurl:
+---
+
+---
+layout: post
+date: 2025-02-23
+title: Exercises
+details:
+hascontent: false
+repourl: https://github.com/minhhoccode111/exercises
+demourl:
+noteurl:
+---
+
+---
+layout: post
+date: 2025-02-22
+title: Real World Express
+details: Express Mongo Mongoose JWT Rest.nvim
+hascontent: false
+repourl: https://github.com/minhhoccode111/0-realworld-back-express
+demourl:
+noteurl:
+---
+
+---
+layout: post
+date: 2025-02-21
+title: Homepage
+details: JS HTML CSS Webpack Tailwind Gh-pages
+hascontent: false
+repourl: https://github.com/minhhoccode111/homepage-top
+demourl: https://minhhoccode111.github.io/homepage-top/
+noteurl:
+---
+
+---
+layout: post
+date: 2025-02-20
+title: Battleship
+details: JS HTML CSS Webpack Gh-pages
+hascontent: false
+repourl: https://github.com/minhhoccode111/battleship-top/
+demourl: https://minhhoccode111.github.io/battleship-top/
+noteurl:
+---
+
+---
+layout: post
+date: 2025-02-19
+title: Knight's Travails
+details: React Tailwind Vite Netlify
+hascontent: false
+repourl: https://github.com/minhhoccode111/operate-algorithms/
+demourl: https://knighttravailstop.netlify.app/
+noteurl:
+---
+
+---
+layout: post
+date: 2025-02-18
+title: Whether App
+details: React Tailwind Vite Giphy-api Weather-api Netlify
+hascontent: false
+repourl: https://github.com/minhhoccode111/weather-app-top
+demourl: https://weatherapptop.netlify.app/
+noteurl:
+---
+
+---
+layout: post
+date: 2025-02-17
+title: Todo List
+details: JS HTML CSS Webpack Gh-pages
+hascontent: false
+repourl: https://github.com/minhhoccode111/todo-list-top/
+demourl: https://minhhoccode111.github.io/todo-list-top/
+noteurl:
+---
+
+---
+layout: post
+date: 2025-02-16
+title: Connect Four Game
+details: JS HTML CSS Webpack Gh-pages
+hascontent: false
+repourl: https://github.com/minhhoccode111/connect-four-game-top/
+demourl: https://minhhoccode111.github.io/connect-four-game-top/
+noteurl:
+---
+
+---
+layout: post
+date: 2025-02-15
+title: Restaurant Page
+details: JS HTML CSS Webpack Gh-pages
+hascontent: false
+repourl: https://github.com/minhhoccode111/restaurant-page-top/
+demourl: https://minhhoccode111.github.io/restaurant-page-top/
+noteurl:
+---
+
+---
+layout: post
+date: 2025-02-14
+title: Tic Tac Toe
+details: JS HTML CSS DSA Gh-pages
+hascontent: false
+repourl: https://github.com/minhhoccode111/tic-tac-toe-top/
+demourl: https://minhhoccode111.github.io/tic-tac-toe-top/
+noteurl:
+---
+
+---
+layout: post
+date: 2025-02-13
+title: Library
+details: TS React React router Tailwind Vite Netlify
+hascontent: false
+repourl: https://github.com/minhhoccode111/library-top/
+demourl: https://librarytop.netlify.app/
+noteurl:
+---
+
+---
+layout: post
+date: 2025-02-12
+title: Snake Game
+details: JS HTML CSS Gh-pages
+hascontent: false
+repourl: https://github.com/minhhoccode111/snake-game/
+demourl: https://minhhoccode111.github.io/snake-game/
+noteurl:
+---
+
+---
+layout: post
+date: 2025-02-11
+title: Admin Dashboard
+details: JS HTML CSS Gh-pages
+hascontent: false
+repourl: https://github.com/minhhoccode111/admin-dashboard-top/
+demourl: https://minhhoccode111.github.io/admin-dashboard-top/
+noteurl:
+---
+
+---
+layout: post
+date: 2025-02-10
+title: Sign Up Page
+details: JS HTML CSS Gh-pages
+hascontent: false
+repourl: https://github.com/minhhoccode111/sign-up-form-top/
+demourl: https://minhhoccode111.github.io/sign-up-form-top/
+noteurl:
+---
+
+---
+layout: post
+date: 2025-02-09
+title: Calculator
+details: JS HTML CSS Gh-pages
+hascontent: false
+repourl: https://github.com/minhhoccode111/calculator-on-web-top/
+demourl: https://minhhoccode111.github.io/calculator-on-web-top/
+noteurl:
+---
+
+---
+layout: post
+date: 2025-02-08
+title: Drawing App
+details: JS HTML CSS Gh-pages
+hascontent: false
+repourl: https://github.com/minhhoccode111/etch-a-sketch-top/
+demourl: https://minhhoccode111.github.io/etch-a-sketch-top/
+noteurl:
+---
+
+---
+layout: post
+date: 2025-02-07
+title: Rock Paper Scissors
+details: JS HTML CSS Gh-pages
+hascontent: false
+repourl: https://github.com/minhhoccode111/rock-paper-scissors-game-top/
+demourl: https://minhhoccode111.github.io/rock-paper-scissors-game-top/
+noteurl:
+---
+
+---
+layout: post
+date: 2025-02-06
+title: Landing Page
+details: HTML CSS Gh-pages
+hascontent: false
+repourl: https://github.com/minhhoccode111/landing-page-top/
+demourl: https://minhhoccode111.github.io/landing-page-top/
+noteurl:
+---
+
+---
+layout: post
+date: 2025-02-05
+title: Recipes Website
+details: JS HTML CSS Webpack Tailwind Gh-pages
+hascontent: false
+repourl: https://github.com/minhhoccode111/recipes-website-top
+demourl: https://minhhoccode111.github.io/recipes-website-top/
+noteurl:
+---
+
