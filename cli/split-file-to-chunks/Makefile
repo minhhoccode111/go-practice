@@ -10,3 +10,5 @@ run: build
 
 clean:
 	rm -f $(BINARY_NAME)
+	# remove every other md files except README
+	find . -type f -name "*.md" ! -name "README.md" -delete

@@ -4,59 +4,82 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 )
 
-func sanitizeFilename(title string) string {
-	title = strings.TrimPrefix(title, "title: ")
-	title = strings.ToLower(title)
-	title = strings.ReplaceAll(title, " ", "-")
-	title = strings.ReplaceAll(title, "'", "-")
-	return title + ".md"
+func panicUsage() {
+	panic("usage: ./split-file-to-chunks file-name<string> chunk-size<int> title-index<int>")
+}
+
+func sanitizeFileName(s string) string {
+	// remove prefix "title: "
+	reTitle := regexp.MustCompile(`^title:\s`)
+	s = reTitle.ReplaceAllString(s, "")
+	// format file name
+	s = strings.ToLower(s)
+	s = strings.ReplaceAll(s, " ", "-")
+	re := regexp.MustCompile(`[^a-z0-9\-]`)
+	s = re.ReplaceAllString(s, "")
+	return s + ".md"
 }
 
 func main() {
-	if len(os.Args) != 4 {
-		panic("Usage: split-file-to-chunks <input-file(str)> <chunk-size(int)> <title-position(int)>")
-	}
-	inputFile := os.Args[1]
-	chunkSize, err := strconv.Atoi(os.Args[2])
-	if err != nil {
-		panic("Invalid chunk size")
-	}
-	titlePosition, err := strconv.Atoi(os.Args[3])
-	if err != nil {
-		panic("Invalid title position")
+	// extract command line arguments
+	args := os.Args[1:]
+	if len(args) < 3 {
+		panicUsage()
 	}
 
-	file, err := os.Open(inputFile)
+	inputFileName := args[0]
+
+	eachChunkSize, err := strconv.Atoi(args[1])
 	if err != nil {
-		panic("Can't read the file")
+		panicUsage()
 	}
-	defer file.Close()
 
-	scanner := bufio.NewScanner(file)
-	var chunk []string
-	chunkCount := 0
+	titleIndex, err := strconv.Atoi(args[2])
+	if err != nil {
+		panicUsage()
+	}
 
+	openedInputFile, err := os.Open(inputFileName)
+	if err != nil {
+		panic(err)
+	}
+	defer openedInputFile.Close()
+
+	linesOfChunk := make([]string, eachChunkSize)
+	outputName := ""
+	count := 0
+
+	scanner := bufio.NewScanner(openedInputFile)
 	for scanner.Scan() {
-		chunk = append(chunk, scanner.Text())
-		if len(chunk) == chunkSize {
-			if len(chunk) > titlePosition {
-				filename := sanitizeFilename(chunk[titlePosition])
-				err := os.WriteFile(filename, []byte(strings.Join(chunk, "\n")+"\n"), 0644)
-				if err != nil {
-					panic(fmt.Sprintf("Failed to write file %s", filename))
-				}
-				fmt.Printf("Created: %s\n", filename)
+		currentLine := scanner.Text()
+		linesOfChunk[count] = currentLine
+
+		if count == titleIndex {
+			outputName = sanitizeFileName(currentLine)
+		}
+
+		count++
+
+		if count == eachChunkSize {
+			count = 0
+
+			outputFile, err := os.Create(outputName)
+			if err != nil {
+				panic(err)
 			}
-			chunk = nil
-			chunkCount++
+			defer outputFile.Close()
+
+			fmt.Println("Creating file: ", outputName)
+			outputFile.WriteString(strings.Join(linesOfChunk, "\n"))
 		}
 	}
 
 	if err := scanner.Err(); err != nil {
-		panic("Error reading file")
+		panic(err)
 	}
 }
