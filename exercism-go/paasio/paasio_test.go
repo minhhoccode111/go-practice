@@ -27,7 +27,7 @@ func TestMultiThreaded(t *testing.T) {
 }
 
 // this test could be improved to test that error conditions are preserved.
-func testWrite(t *testing.T, writer func(io.Writer) WriteCounter) {
+func testWrite(t *testing.T, writer func(io.Writer) IWriteCounter) {
 	for i, test := range []struct {
 		writes []string
 	}{
@@ -60,7 +60,7 @@ func TestWriteWriter(t *testing.T) {
 }
 
 func TestWriteReadWriter(t *testing.T) {
-	testWrite(t, func(w io.Writer) WriteCounter {
+	testWrite(t, func(w io.Writer) IWriteCounter {
 		var r nopReader
 		return NewReadWriteCounter(readWriter{r, w})
 	})
@@ -68,7 +68,7 @@ func TestWriteReadWriter(t *testing.T) {
 
 // this test could be improved to test exact number of operations as well as
 // ensure that error conditions are preserved.
-func testRead(t *testing.T, reader func(io.Reader) ReadCounter) {
+func testRead(t *testing.T, reader func(io.Reader) IReadCounter) {
 	chunkLen := 10 << 20 // 10MB
 	orig := make([]byte, 10<<20)
 	_, err := rand.Read(orig)
@@ -102,13 +102,13 @@ func TestReadReader(t *testing.T) {
 }
 
 func TestReadReadWriter(t *testing.T) {
-	testRead(t, func(r io.Reader) ReadCounter {
+	testRead(t, func(r io.Reader) IReadCounter {
 		var w nopWriter
 		return NewReadWriteCounter(readWriter{r, w})
 	})
 }
 
-func testReadTotal(t *testing.T, rc ReadCounter) {
+func testReadTotal(t *testing.T, rc IReadCounter) {
 	numGo := 8000
 	numBytes := 50
 	totalBytes := int64(numGo) * int64(numBytes)
@@ -147,7 +147,7 @@ func TestReadTotalReadWriter(t *testing.T) {
 	testReadTotal(t, NewReadWriteCounter(rw))
 }
 
-func testWriteTotal(t *testing.T, wt WriteCounter) {
+func testWriteTotal(t *testing.T, wt IWriteCounter) {
 	numGo := 8000
 	numBytes := 50
 	totalBytes := int64(numGo) * int64(numBytes)
@@ -196,7 +196,7 @@ func TestReadCountConsistencyReadWriter(t *testing.T) {
 	testReadCountConsistency(t, NewReadWriteCounter(rw))
 }
 
-func testReadCountConsistency(t *testing.T, rc ReadCounter) {
+func testReadCountConsistency(t *testing.T, rc IReadCounter) {
 	const numGo = 4000
 	const numBytes = 50
 	p := make([]byte, numBytes)
@@ -234,7 +234,7 @@ func TestWriteCountConsistencyReadWriter(t *testing.T) {
 	testWriteCountConsistency(t, NewReadWriteCounter(rw))
 }
 
-func testWriteCountConsistency(t *testing.T, wc WriteCounter) {
+func testWriteCountConsistency(t *testing.T, wc IWriteCounter) {
 	const numGo = 4000
 	const numBytes = 50
 	p := make([]byte, numBytes)

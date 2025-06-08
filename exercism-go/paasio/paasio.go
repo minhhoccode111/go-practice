@@ -6,57 +6,37 @@ import (
 )
 
 type readCounter struct {
-	reader io.Reader
 	count  int64
 	ops    int
+	reader io.Reader
 	mu     sync.Mutex
 }
 
 type writeCounter struct {
-	writer io.Writer
 	count  int64
 	ops    int
+	writer io.Writer
 	mu     sync.Mutex
 }
 
 type counter struct {
-	reader io.Reader
-	writer io.Writer
-	r      readCounter
-	w      writeCounter
+	r *readCounter
+	w *writeCounter
 }
 
-func NewWriteCounter(writer io.Writer) WriteCounter {
+func NewWriteCounter(writer io.Writer) IWriteCounter {
 	return &writeCounter{writer: writer}
 }
 
-func NewReadCounter(reader io.Reader) ReadCounter {
+func NewReadCounter(reader io.Reader) IReadCounter {
 	return &readCounter{reader: reader}
 }
 
-func NewReadWriteCounter(readwriter io.ReadWriter) ReadWriteCounter {
+func NewReadWriteCounter(readwriter io.ReadWriter) IReadWriteCounter {
 	return &counter{
-		reader: readwriter,
-		writer: readwriter,
-		r:      readCounter{reader: readwriter},
-		w:      writeCounter{writer: readwriter},
+		r: &readCounter{reader: readwriter},
+		w: &writeCounter{writer: readwriter},
 	}
-}
-
-func (c *counter) Read(p []byte) (int, error) {
-	return c.r.Read(p)
-}
-
-func (c *counter) ReadCount() (int64, int) {
-	return c.r.ReadCount()
-}
-
-func (c *counter) Write(p []byte) (int, error) {
-	return c.w.Write(p)
-}
-
-func (c *counter) WriteCount() (int64, int) {
-	return c.w.WriteCount()
 }
 
 func (rc *readCounter) Read(p []byte) (int, error) {
@@ -91,4 +71,20 @@ func (wc *writeCounter) WriteCount() (int64, int) {
 	wc.mu.Lock()
 	defer wc.mu.Unlock()
 	return wc.count, wc.ops
+}
+
+func (c *counter) Read(p []byte) (int, error) {
+	return c.r.Read(p)
+}
+
+func (c *counter) ReadCount() (int64, int) {
+	return c.r.ReadCount()
+}
+
+func (c *counter) Write(p []byte) (int, error) {
+	return c.w.Write(p)
+}
+
+func (c *counter) WriteCount() (int64, int) {
+	return c.w.WriteCount()
 }
