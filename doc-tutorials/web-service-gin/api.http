@@ -1,0 +1,15 @@
+###
+GET http://localhost:8080/albums
+
+###
+POST http://localhost:8080/albums
+
+{
+    "id": "7",
+    "title": "Không điều kiện",
+    "artist": "Cá Hồi Hoang",
+    "price": 49.99
+}
+
+###
+GET http://localhost:8080/albums/7
