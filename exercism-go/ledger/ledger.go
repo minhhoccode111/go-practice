@@ -12,16 +12,22 @@ type Entry struct {
 	Change      int // in cents
 }
 
+type Info struct {
+	index int
+	str   string
+	err   error
+}
+
 func FormatLedger(currency string, locale string, entries []Entry) (string, error) {
-	var entriesCopy []Entry
-	for _, e := range entries {
-		entriesCopy = append(entriesCopy, e)
-	}
+	entriesCopy := make([]Entry, len(entries))
+	copy(entriesCopy, entries)
+
 	if len(entries) == 0 {
 		if _, err := FormatLedger(currency, "en-US", []Entry{{Date: "2014-01-01", Description: "", Change: 0}}); err != nil {
 			return "", err
 		}
 	}
+
 	m1 := map[bool]int{true: 0, false: 1}
 	m2 := map[bool]int{true: -1, false: 1}
 	es := entriesCopy
@@ -43,52 +49,37 @@ func FormatLedger(currency string, locale string, entries []Entry) (string, erro
 	}
 
 	var s string
-	if locale == "nl-NL" {
+	switch locale {
+	case "nl-NL":
 		s = "Datum" +
 			strings.Repeat(" ", 10-len("Datum")) +
 			" | " +
 			"Omschrijving" +
 			strings.Repeat(" ", 25-len("Omschrijving")) +
 			" | " + "Verandering" + "\n"
-	} else if locale == "en-US" {
+	case "en-US":
 		s = "Date" +
 			strings.Repeat(" ", 10-len("Date")) +
 			" | " +
 			"Description" +
 			strings.Repeat(" ", 25-len("Description")) +
 			" | " + "Change" + "\n"
-	} else {
+	default:
 		return "", errors.New("")
 	}
 	// Parallelism, always a great idea
-	co := make(chan struct {
-		i int
-		s string
-		e error
-	})
+	co := make(chan Info)
 	for i, et := range entriesCopy {
 		go func(i int, entry Entry) {
 			if len(entry.Date) != 10 {
-				co <- struct {
-					i int
-					s string
-					e error
-				}{e: errors.New("")}
+				co <- Info{err: errors.New("")}
 			}
 			d1, d2, d3, d4, d5 := entry.Date[0:4], entry.Date[4], entry.Date[5:7], entry.Date[7], entry.Date[8:10]
 			if d2 != '-' {
-				co <- struct {
-					i int
-					s string
-					e error
-				}{e: errors.New("")}
+				co <- Info{err: errors.New("")}
 			}
 			if d4 != '-' {
-				co <- struct {
-					i int
-					s string
-					e error
-				}{e: errors.New("")}
+				co <- Info{err: errors.New("")}
 			}
 			de := entry.Description
 			if len(de) > 25 {
@@ -97,9 +88,10 @@ func FormatLedger(currency string, locale string, entries []Entry) (string, erro
 				de = de + strings.Repeat(" ", 25-len(de))
 			}
 			var d string
-			if locale == "nl-NL" {
+			switch locale {
+			case "nl-NL":
 				d = d5 + "-" + d3 + "-" + d1
-			} else if locale == "en-US" {
+			case "en-US":
 				d = d3 + "/" + d5 + "/" + d1
 			}
 			negative := false
@@ -109,17 +101,15 @@ func FormatLedger(currency string, locale string, entries []Entry) (string, erro
 				negative = true
 			}
 			var a string
-			if locale == "nl-NL" {
-				if currency == "EUR" {
+			switch locale {
+			case "nl-NL":
+				switch currency {
+				case "EUR":
 					a += "€"
-				} else if currency == "USD" {
+				case "USD":
 					a += "$"
-				} else {
-					co <- struct {
-						i int
-						s string
-						e error
-					}{e: errors.New("")}
+				default:
+					co <- Info{err: errors.New("")}
 				}
 				a += " "
 				centsStr := strconv.Itoa(cents)
@@ -149,20 +139,17 @@ func FormatLedger(currency string, locale string, entries []Entry) (string, erro
 				} else {
 					a += " "
 				}
-			} else if locale == "en-US" {
+			case "en-US":
 				if negative {
 					a += "("
 				}
-				if currency == "EUR" {
+				switch currency {
+				case "EUR":
 					a += "€"
-				} else if currency == "USD" {
+				case "USD":
 					a += "$"
-				} else {
-					co <- struct {
-						i int
-						s string
-						e error
-					}{e: errors.New("")}
+				default:
+					co <- Info{err: errors.New("")}
 				}
 				centsStr := strconv.Itoa(cents)
 				switch len(centsStr) {
@@ -191,32 +178,24 @@ func FormatLedger(currency string, locale string, entries []Entry) (string, erro
 				} else {
 					a += " "
 				}
-			} else {
-				co <- struct {
-					i int
-					s string
-					e error
-				}{e: errors.New("")}
+			default:
+				co <- Info{err: errors.New("")}
 			}
 			var al int
 			for range a {
 				al++
 			}
-			co <- struct {
-				i int
-				s string
-				e error
-			}{i: i, s: d + strings.Repeat(" ", 10-len(d)) + " | " + de + " | " +
+			co <- Info{index: i, str: d + strings.Repeat(" ", 10-len(d)) + " | " + de + " | " +
 				strings.Repeat(" ", 13-al) + a + "\n"}
 		}(i, et)
 	}
 	ss := make([]string, len(entriesCopy))
 	for range entriesCopy {
 		v := <-co
-		if v.e != nil {
-			return "", v.e
+		if v.err != nil {
+			return "", v.err
 		}
-		ss[v.i] = v.s
+		ss[v.index] = v.str
 	}
 	for i := 0; i < len(entriesCopy); i++ {
 		s += ss[i]
