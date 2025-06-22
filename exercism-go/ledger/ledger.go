@@ -2,6 +2,7 @@ package ledger
 
 import (
 	"errors"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -28,25 +29,15 @@ func FormatLedger(currency string, locale string, entries []Entry) (string, erro
 		}
 	}
 
-	m1 := map[bool]int{true: 0, false: 1}
-	m2 := map[bool]int{true: -1, false: 1}
-	es := entriesCopy
-	for len(es) > 1 {
-		first, rest := es[0], es[1:]
-		success := false
-		for !success {
-			success = true
-			for i, e := range rest {
-				if (m1[e.Date == first.Date]*m2[e.Date < first.Date]*4 +
-					m1[e.Description == first.Description]*m2[e.Description < first.Description]*2 +
-					m1[e.Change == first.Change]*m2[e.Change < first.Change]*1) < 0 {
-					es[0], es[i+1] = es[i+1], es[0]
-					success = false
-				}
-			}
+	slices.SortFunc(entriesCopy, func(a, b Entry) int {
+		if cmp := strings.Compare(a.Date, b.Date); cmp != 0 {
+			return cmp
 		}
-		es = es[1:]
-	}
+		if cmp := strings.Compare(a.Description, b.Description); cmp != 0 {
+			return cmp
+		}
+		return a.Change - b.Change
+	})
 
 	var s string
 	switch locale {
@@ -67,6 +58,7 @@ func FormatLedger(currency string, locale string, entries []Entry) (string, erro
 	default:
 		return "", errors.New("")
 	}
+
 	// Parallelism, always a great idea
 	co := make(chan Info)
 	for i, et := range entriesCopy {
