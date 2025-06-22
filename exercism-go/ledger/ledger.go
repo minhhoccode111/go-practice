@@ -2,6 +2,7 @@ package ledger
 
 import (
 	"errors"
+	"fmt"
 	"slices"
 	"strconv"
 	"strings"
@@ -20,15 +21,37 @@ type Info struct {
 	err   error
 }
 
-func FormatLedger(currency string, locale string, entries []Entry) (string, error) {
-	entriesCopy := make([]Entry, len(entries))
-	copy(entriesCopy, entries)
-
-	if len(entries) == 0 {
-		if _, err := FormatLedger(currency, "en-US", []Entry{{Date: "2014-01-01", Description: "", Change: 0}}); err != nil {
-			return "", err
-		}
+func Header(locale string) string {
+	switch locale {
+	case "nl-NL":
+		return "Datum" +
+			strings.Repeat(" ", 10-len("Datum")) +
+			" | " +
+			"Omschrijving" +
+			strings.Repeat(" ", 25-len("Omschrijving")) +
+			" | " + "Verandering" + "\n"
+	case "en-US":
+		return "Date" +
+			strings.Repeat(" ", 10-len("Date")) +
+			" | " +
+			"Description" +
+			strings.Repeat(" ", 25-len("Description")) +
+			" | " + "Change" + "\n"
+	default:
+		panic("")
 	}
+}
+
+func FormatLedger(currency string, locale string, entries []Entry) (string, error) {
+	if locale != "nl-NL" && locale != "en-US" {
+		return "", fmt.Errorf("Invalid locale")
+	}
+
+	if currency != "EUR" && currency != "USD" {
+		return "", fmt.Errorf("Invalid currency")
+	}
+
+	entriesCopy := slices.Clone(entries)
 
 	slices.SortFunc(entriesCopy, func(a, b Entry) int {
 		if cmp := strings.Compare(a.Date, b.Date); cmp != 0 {
@@ -40,25 +63,7 @@ func FormatLedger(currency string, locale string, entries []Entry) (string, erro
 		return a.Change - b.Change
 	})
 
-	var s string
-	switch locale {
-	case "nl-NL":
-		s = "Datum" +
-			strings.Repeat(" ", 10-len("Datum")) +
-			" | " +
-			"Omschrijving" +
-			strings.Repeat(" ", 25-len("Omschrijving")) +
-			" | " + "Verandering" + "\n"
-	case "en-US":
-		s = "Date" +
-			strings.Repeat(" ", 10-len("Date")) +
-			" | " +
-			"Description" +
-			strings.Repeat(" ", 25-len("Description")) +
-			" | " + "Change" + "\n"
-	default:
-		return "", errors.New("")
-	}
+	s := Header(locale)
 
 	usFormat := "01/02/2006"
 	nlFormat := "02-01-2006"
@@ -68,39 +73,39 @@ func FormatLedger(currency string, locale string, entries []Entry) (string, erro
 		if err != nil {
 			return "", errors.New("Date is not valid")
 		}
+
 		desc := entry.Description
 		if len(desc) > 25 {
 			desc = desc[:22] + "..."
 		} else {
 			desc = desc + strings.Repeat(" ", 25-len(desc))
 		}
+
 		var dateString string
 		switch locale {
 		case "nl-NL":
 			dateString = date.Format(nlFormat)
 		case "en-US":
 			dateString = date.Format(usFormat)
-		default:
-			return "", errors.New("Locale is not valid")
 		}
+
 		negative := false
 		cents := entry.Change
 		if cents < 0 {
 			cents = cents * -1
 			negative = true
 		}
-		var a string
+
+		var changeString string
 		switch locale {
 		case "nl-NL":
 			switch currency {
 			case "EUR":
-				a += "€"
+				changeString += "€"
 			case "USD":
-				a += "$"
-			default:
-				return "", errors.New("Currency is not valid")
+				changeString += "$"
 			}
-			a += " "
+			changeString += " "
 			centsStr := strconv.Itoa(cents)
 			switch len(centsStr) {
 			case 1:
@@ -118,27 +123,25 @@ func FormatLedger(currency string, locale string, entries []Entry) (string, erro
 				parts = append(parts, rest)
 			}
 			for i := len(parts) - 1; i >= 0; i-- {
-				a += parts[i] + "."
+				changeString += parts[i] + "."
 			}
-			a = a[:len(a)-1]
-			a += ","
-			a += centsStr[len(centsStr)-2:]
+			changeString = changeString[:len(changeString)-1]
+			changeString += ","
+			changeString += centsStr[len(centsStr)-2:]
 			if negative {
-				a += "-"
+				changeString += "-"
 			} else {
-				a += " "
+				changeString += " "
 			}
 		case "en-US":
 			if negative {
-				a += "("
+				changeString += "("
 			}
 			switch currency {
 			case "EUR":
-				a += "€"
+				changeString += "€"
 			case "USD":
-				a += "$"
-			default:
-				return "", errors.New("Cuerrency is not valid")
+				changeString += "$"
 			}
 			centsStr := strconv.Itoa(cents)
 			switch len(centsStr) {
@@ -157,24 +160,22 @@ func FormatLedger(currency string, locale string, entries []Entry) (string, erro
 				parts = append(parts, rest)
 			}
 			for i := len(parts) - 1; i >= 0; i-- {
-				a += parts[i] + ","
+				changeString += parts[i] + ","
 			}
-			a = a[:len(a)-1]
-			a += "."
-			a += centsStr[len(centsStr)-2:]
+			changeString = changeString[:len(changeString)-1]
+			changeString += "."
+			changeString += centsStr[len(centsStr)-2:]
 			if negative {
-				a += ")"
+				changeString += ")"
 			} else {
-				a += " "
+				changeString += " "
 			}
-		default:
-			return "", errors.New("Locale is not valid")
 		}
 		var al int
-		for range a {
+		for range changeString {
 			al++
 		}
-		s += dateString + strings.Repeat(" ", 10-len(dateString)) + " | " + desc + " | " + strings.Repeat(" ", 13-al) + a + "\n"
+		s += dateString + strings.Repeat(" ", 10-len(dateString)) + " | " + desc + " | " + strings.Repeat(" ", 13-al) + changeString + "\n"
 	}
 	return s, nil
 }
