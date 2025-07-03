@@ -1,0 +1,21 @@
+@api = http://localhost:8000
+
+###
+GET {{api}}
+
+###
+GET {{api}}/hello
+
+### not allow
+POST {{api}}/hello
+
+###
+GET {{api}}/hello?name=world
+
+###
+GET {{api}}/hello?name=minhhoccode111
+
+### test unicode
+@name = Minh / Đặng
+###
+GET {{api}}/hello?name={{name}}
