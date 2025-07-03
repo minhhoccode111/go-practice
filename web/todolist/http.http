@@ -1,0 +1,52 @@
+@api = http://localhost:8000
+
+###
+GET {{api}}
+
+###
+POST {{api}}
+
+###
+GET {{api}}/todos
+
+### edge case
+@pageNumber = -1
+@perPage = -1
+###
+GET {{api}}/todos?perPage={{perPage}}&pageNumber={{pageNumber}}
+
+### edge case
+@pageNumber = 0
+@perPage = 0
+###
+GET {{api}}/todos?perPage={{perPage}}&pageNumber={{pageNumber}}
+
+### default
+@pageNumber =
+@perPage =
+###
+GET {{api}}/todos?perPage={{perPage}}&pageNumber={{pageNumber}}
+
+### default
+@pageNumber = 1
+@perPage = 2
+###
+GET {{api}}/todos?perPage={{perPage}}&pageNumber={{pageNumber}}
+
+###
+POST {{api}}/todos
+
+{
+    "Description": "Add a dummy todo"
+}
+
+###
+@id = 0
+###
+GET {{api}}/todos/{{id}}
+
+###
+PUT {{api}}/todos/{{id}}
+
+###
+DELETE {{api}}/todos/{{id}}
