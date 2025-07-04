@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -33,8 +34,8 @@ func main() {
 		MaxHeaderBytes: 1 << 10, // 1024
 	}
 	http.HandleFunc("/", handleIndex)
-	http.HandleFunc("/todos", handleTodos)    // get, post
-	http.HandleFunc("/todos/:id", handleTodo) // get, put, delete
+	http.HandleFunc("/todos", handleTodos)     // get, post
+	http.HandleFunc("/todos/{id}", handleTodo) // get, put, delete
 	log.Fatal(s.ListenAndServe())
 }
 
@@ -134,6 +135,75 @@ func handlePostTodo(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(newTodo)
 }
 
-func handleGetTodo(w http.ResponseWriter, r *http.Request)    {}
-func handlePutTodo(w http.ResponseWriter, r *http.Request)    {}
-func handleDeleteTodo(w http.ResponseWriter, r *http.Request) {}
+func handleGetTodo(w http.ResponseWriter, r *http.Request) {
+	paths := strings.Split(r.URL.Path, "/")
+	idStr := paths[len(paths)-1]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Please provide valid Todo Id", http.StatusBadRequest)
+		return
+	}
+	for _, v := range todos {
+		if v.Id == id {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(v)
+			return
+		}
+	}
+	http.Error(w, "Todo not found", http.StatusNotFound)
+}
+
+func handlePutTodo(w http.ResponseWriter, r *http.Request) {
+	paths := strings.Split(r.URL.Path, "/")
+	idStr := paths[len(paths)-1]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Please provide valid Todo Id", http.StatusBadRequest)
+		return
+	}
+
+	var todoDTO Todo
+	json.NewDecoder(r.Body).Decode(&todoDTO)
+
+	if todoDTO.Description == "" {
+		http.Error(w, "Description cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	for i, v := range todos {
+		if v.Id == id {
+			newTodo := Todo{
+				Id:          v.Id, // can't update Todo.Id
+				Description: todoDTO.Description,
+				IsDone:      todoDTO.IsDone,
+			}
+			todos[i] = newTodo
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(newTodo)
+			return
+		}
+	}
+
+	http.Error(w, "Todo not found", http.StatusNotFound)
+}
+
+func handleDeleteTodo(w http.ResponseWriter, r *http.Request) {
+	paths := strings.Split(r.URL.Path, "/")
+	idStr := paths[len(paths)-1]
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Please provide valid Todo Id", http.StatusBadRequest)
+		return
+	}
+
+	for i, v := range todos {
+		if v.Id == id {
+			todos = append(todos[:i], todos[i+1:]...)
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+	}
+
+	http.Error(w, "Todo not found", http.StatusNotFound)
+}

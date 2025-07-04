@@ -1,12 +1,12 @@
 @api = http://localhost:8000
 
-###
+### hello world
 GET {{api}}
 
 ###
 POST {{api}}
 
-###
+### all todos
 GET {{api}}/todos
 
 ### edge case
@@ -27,26 +27,45 @@ GET {{api}}/todos?perPage={{perPage}}&pageNumber={{pageNumber}}
 ###
 GET {{api}}/todos?perPage={{perPage}}&pageNumber={{pageNumber}}
 
-### default
+###
 @pageNumber = 1
 @perPage = 2
 ###
 GET {{api}}/todos?perPage={{perPage}}&pageNumber={{pageNumber}}
 
-###
+### create todo
 POST {{api}}/todos
 
 {
-    "Description": "Add a dummy todo"
+    "description": "Add a dummy todo"
 }
 
+### not found
+@id = -1
 ###
+GET {{api}}/todos/{{id}}
+
+### invalid
+@id = asd
+###
+GET {{api}}/todos/{{id}}
+
+### one todo
 @id = 0
 ###
 GET {{api}}/todos/{{id}}
 
-###
+### edge cases like GET single todo
+@id = 1
+### edit todo
 PUT {{api}}/todos/{{id}}
 
+{
+    "description": "new description asd",
+    "is_done": true
+}
+
 ###
+@id = 1
+### delete todo
 DELETE {{api}}/todos/{{id}}
