@@ -146,9 +146,9 @@ func handleGetTodos(w http.ResponseWriter, r *http.Request) {
 	pageNumberStr := r.URL.Query().Get("pageNumber")
 	var err error
 
-	perPage, err := strconv.Atoi(perPageStr)
-	if err != nil || perPage < 1 {
-		perPage = 10
+	limit, err := strconv.Atoi(perPageStr)
+	if err != nil || limit < 1 {
+		limit = 10
 	}
 
 	pageNumber, err := strconv.Atoi(pageNumberStr)
@@ -156,18 +156,48 @@ func handleGetTodos(w http.ResponseWriter, r *http.Request) {
 		pageNumber = 1
 	}
 
-	start := min((pageNumber-1)*perPage, len(todos))
-	end := min(start+perPage, len(todos))
+	offset := (pageNumber - 1) * limit
+
+	rows, err := db.Query(`
+		select id, description, is_done from todos
+		order by id
+		limit $1
+		offset $2`,
+		limit,
+		offset,
+	)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	todos := []Todo{}
+	for rows.Next() {
+		var todo Todo
+		err := rows.Scan(&todo.Id, &todo.Description, &todo.IsDone)
+		if err != nil {
+			log.Fatal(err)
+		}
+		todos = append(todos, todo)
+	}
+
+	var count int
+	err = db.QueryRow(`select count(*) from todos`).Scan(&count)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	divideAndRoundUp := func(a, b int) int {
 		return (a + b - 1) / b // e.g. 10 / 3 = (10 + 3 - 1) / 3 = 4
 	}
 
 	w.Header().Add("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
-		"totalPage":  divideAndRoundUp(len(todos), perPage),
-		"perPage":    perPage,
+		"totalPage":  divideAndRoundUp(count, limit),
+		"perPage":    limit,
 		"pageNumber": pageNumber,
-		"todos":      todos[start:end],
+		"todos":      todos,
 	})
 }
 

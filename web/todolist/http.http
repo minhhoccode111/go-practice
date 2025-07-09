@@ -28,8 +28,8 @@ GET {{api}}/todos?perPage={{perPage}}&pageNumber={{pageNumber}}
 GET {{api}}/todos?perPage={{perPage}}&pageNumber={{pageNumber}}
 
 ###
-@pageNumber = 1
-@perPage = 2
+@pageNumber = 2
+@perPage = 1
 ###
 GET {{api}}/todos?perPage={{perPage}}&pageNumber={{pageNumber}}
 
