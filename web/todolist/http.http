@@ -37,7 +37,7 @@ GET {{api}}/todos?perPage={{perPage}}&pageNumber={{pageNumber}}
 POST {{api}}/todos
 
 {
-    "description": "Add a dummy todo"
+    "description": "create new todo and save to db"
 }
 
 ### not found
@@ -51,17 +51,17 @@ GET {{api}}/todos/{{id}}
 GET {{api}}/todos/{{id}}
 
 ### one todo
-@id = 0
+@id = 1
 ###
 GET {{api}}/todos/{{id}}
 
 ### edge cases like GET single todo
-@id = 1
+@id = 2
 ### edit todo
 PUT {{api}}/todos/{{id}}
 
 {
-    "description": "new description asd",
+    "description": "write unit tests",
     "is_done": true
 }
 

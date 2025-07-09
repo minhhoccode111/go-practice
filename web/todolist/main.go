@@ -214,14 +214,18 @@ func handlePostTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newTodo := Todo{
-		Id:          countId,
-		Description: todoDTO.Description,
-		IsDone:      false,
-	}
+	var newTodo Todo
 
-	todos = append(todos, newTodo)
-	countId++
+	err = db.QueryRow(`
+		insert into todos (description) values ($1)
+		returning id, description, is_done
+		`,
+		todoDTO.Description,
+	).Scan(&newTodo.Id, &newTodo.Description, &newTodo.IsDone)
+
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -236,14 +240,21 @@ func handleGetTodo(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Please provide valid Todo Id", http.StatusBadRequest)
 		return
 	}
-	for _, v := range todos {
-		if v.Id == id {
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(v)
+
+	var todo Todo
+	err = db.QueryRow(`select id, description, is_done from todos where id = $1`, id).Scan(&todo.Id, &todo.Description, &todo.IsDone)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, "Todo not found", http.StatusNotFound)
 			return
 		}
+
+		log.Fatal(err)
 	}
-	http.Error(w, "Todo not found", http.StatusNotFound)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(todo)
 }
 
 func handlePutTodo(w http.ResponseWriter, r *http.Request) {
@@ -263,21 +274,33 @@ func handlePutTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for i, v := range todos {
-		if v.Id == id {
-			newTodo := Todo{
-				Id:          v.Id, // can't update Todo.Id
-				Description: todoDTO.Description,
-				IsDone:      todoDTO.IsDone,
-			}
-			todos[i] = newTodo
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(newTodo)
+	var updatedTodo Todo
+	err = db.QueryRow(`
+		update todos
+		set description = $1,
+		is_done = $2
+		where id = $3
+		returning id, description, is_done
+		`,
+		todoDTO.Description,
+		todoDTO.IsDone,
+		id,
+	).Scan(
+		&updatedTodo.Id,
+		&updatedTodo.Description,
+		&updatedTodo.IsDone,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, "Todo not found", http.StatusNotFound)
 			return
 		}
+		log.Fatal(err)
 	}
 
-	http.Error(w, "Todo not found", http.StatusNotFound)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(updatedTodo)
 }
 
 func handleDeleteTodo(w http.ResponseWriter, r *http.Request) {
@@ -290,13 +313,19 @@ func handleDeleteTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for i, v := range todos {
-		if v.Id == id {
-			todos = append(todos[:i], todos[i+1:]...)
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
+	result, err := db.Exec(`delete from todos where id = $1`, id)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	http.Error(w, "Todo not found", http.StatusNotFound)
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if rowsAffected == 0 {
+		http.Error(w, "Todo not found", http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
