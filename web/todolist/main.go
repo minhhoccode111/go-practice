@@ -1,8 +1,10 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	_ "github.com/lib/pq"
 	"log"
 	"net/http"
 	"strconv"
@@ -23,16 +25,77 @@ var todos = []Todo{
 
 var countId = len(todos)
 
+const (
+	appPort        = ":8000"
+	dbHost         = "localhost"
+	dbPort         = 5432
+	dbUser         = "mhc"
+	dbPassword     = "Bruh0!0!"
+	dbName         = "todolist"
+	dbSslMode      = "disable"
+	readTimeout    = 1 * time.Second
+	writeTimeout   = 1 * time.Second
+	maxHeaderBytes = 1 << 10 // 1024
+)
+
+var db *sql.DB
+
 func main() {
-	port := ":8000"
-	fmt.Println("Server is listening on port:", port)
-	s := &http.Server{
-		Addr:           port,
-		Handler:        nil,
-		ReadTimeout:    1 * time.Second,
-		WriteTimeout:   1 * time.Second,
-		MaxHeaderBytes: 1 << 10, // 1024
+	connStr := fmt.Sprintf("host=%v port=%v user=%v password=%v dbname=%v sslmode=%v", dbHost, dbPort, dbUser, dbPassword, dbName, dbSslMode)
+
+	var err error
+
+	// create connection with the postgres db
+	db, err = sql.Open("postgres", connStr)
+	if err != nil {
+		log.Fatal(err)
 	}
+	defer db.Close()
+
+	// ping the db
+	err = db.Ping()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// migrate or create tables
+	_, err = db.Exec(`create table if not exists todos (
+		id			serial	primary key,
+		is_done		boolean default false,
+		description	text	not		null
+		);`)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// generate fake data if doesn't have any
+	var count int
+	err = db.QueryRow("select count(*) from todos").Scan(&count)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if count == 0 {
+		_, err = db.Exec(
+			`insert into todos (description, is_done) values ($1, $2), ($3, $4)`,
+			"generate data test", true,
+			"write unit tests", false,
+		)
+		if err != nil {
+			log.Printf("Insert dummy data failed: %v", err)
+		}
+	}
+
+	// start server
+	fmt.Println("Server is listening on port:", appPort)
+	s := &http.Server{
+		Addr:           appPort,
+		Handler:        nil,
+		ReadTimeout:    readTimeout,
+		WriteTimeout:   writeTimeout,
+		MaxHeaderBytes: maxHeaderBytes, // 1024
+	}
+
 	http.HandleFunc("/", handleIndex)
 	http.HandleFunc("/todos", handleTodos)     // get, post
 	http.HandleFunc("/todos/{id}", handleTodo) // get, put, delete
