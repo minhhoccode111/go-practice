@@ -18,13 +18,6 @@ type Todo struct {
 	IsDone      bool   `json:"is_done"`
 }
 
-var todos = []Todo{
-	{Id: 0, Description: "Init project todolist", IsDone: true},
-	{Id: 1, Description: "Finish project todolist", IsDone: false},
-}
-
-var countId = len(todos)
-
 const (
 	appPort        = ":8000"
 	dbHost         = "localhost"
