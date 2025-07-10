@@ -4,11 +4,13 @@ Concepts:
 
 - Middleware
 - Pagination
+- Filter
 - Soft-delete
 - Authorization
 - Authentication
 - Use `PATCH` verb
 - Database indexes
+- Interface
 - Password hashing
 - Input validation + sanitization
 - Use pointer to differentiate between "no provided" and "explicitly false" in Go
@@ -37,10 +39,12 @@ Database:
 ```txt
 - Users:
     - id
-    - first
-    - last
-    - email      (index)
+    - role
+idx - email
     - password
     - is_active
-    - role
+idx - last_name
+idx - first_name
+    - created_at
+    - updated_at
 ```
