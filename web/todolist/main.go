@@ -161,7 +161,9 @@ func handleGetTodos(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Database error: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
 	}
 	defer rows.Close()
 
@@ -170,7 +172,9 @@ func handleGetTodos(w http.ResponseWriter, r *http.Request) {
 		var todo Todo
 		err := rows.Scan(&todo.Id, &todo.Description, &todo.IsDone)
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("Database error: %v", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
 		}
 		todos = append(todos, todo)
 	}
@@ -178,7 +182,9 @@ func handleGetTodos(w http.ResponseWriter, r *http.Request) {
 	var count int
 	err = db.QueryRow(`select count(*) from todos`).Scan(&count)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Database error: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
 	}
 
 	divideAndRoundUp := func(a, b int) int {
@@ -217,7 +223,9 @@ func handlePostTodo(w http.ResponseWriter, r *http.Request) {
 	).Scan(&newTodo.Id, &newTodo.Description, &newTodo.IsDone)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Database error: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -243,7 +251,9 @@ func handleGetTodo(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		log.Fatal(err)
+		log.Printf("Database error: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -289,7 +299,10 @@ func handlePutTodo(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Todo not found", http.StatusNotFound)
 			return
 		}
-		log.Fatal(err)
+
+		log.Printf("Database error: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -308,12 +321,16 @@ func handleDeleteTodo(w http.ResponseWriter, r *http.Request) {
 
 	result, err := db.Exec(`delete from todos where id = $1`, id)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Database error: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Database error: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
 	}
 	if rowsAffected == 0 {
 		http.Error(w, "Todo not found", http.StatusNotFound)
