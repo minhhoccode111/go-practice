@@ -2,6 +2,7 @@
 
 Concepts:
 
+- Router
 - Middleware
 - Pagination
 - Filter
@@ -10,6 +11,7 @@ Concepts:
 - Authentication
 - Use `PATCH` verb
 - Database indexes
+- Database migration
 - Interface
 - Password hashing
 - Input validation + sanitization
