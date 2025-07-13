@@ -21,10 +21,19 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	r.HandleFunc("/", s.HelloWorldHandler)
 
+	r.HandleFunc("/auth/register", s.RegisterHandler).Methods("POST")
+	r.HandleFunc("/auth/login", s.LoginHandler).Methods("POST")
+
+	r.HandleFunc("/users/all", s.GetUsersHandler).Methods("GET")
+	r.HandleFunc("/users/{id}", s.GetUserHandler).Methods("GET")
+	r.HandleFunc("/users/{id}", s.UpdateUserHandler).Methods("PUT")
+	r.HandleFunc("/users/{id}/status", s.StatusUserHandler).Methods("PATCH")
+	r.HandleFunc("/users/{id}/password", s.PasswordUserHandler).Methods("PATCH")
+	r.HandleFunc("/users/{id}", s.DeleteUserHandler).Methods("DELETE")
+
 	r.HandleFunc("/health", s.healthHandler)
 
 	r.HandleFunc("/websocket", s.websocketHandler)
-
 	return r
 }
 
@@ -56,8 +65,19 @@ func (s *Server) HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("error handling JSON marshal. Err: %v", err)
 	}
 
+	w.Header().Add("Content-Type", "application/json")
 	_, _ = w.Write(jsonResp)
 }
+
+// TODO:
+func (s *Server) RegisterHandler(w http.ResponseWriter, r *http.Request)     {}
+func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request)        {}
+func (s *Server) GetUsersHandler(w http.ResponseWriter, r *http.Request)     {}
+func (s *Server) GetUserHandler(w http.ResponseWriter, r *http.Request)      {}
+func (s *Server) UpdateUserHandler(w http.ResponseWriter, r *http.Request)   {}
+func (s *Server) StatusUserHandler(w http.ResponseWriter, r *http.Request)   {}
+func (s *Server) PasswordUserHandler(w http.ResponseWriter, r *http.Request) {}
+func (s *Server) DeleteUserHandler(w http.ResponseWriter, r *http.Request)   {}
 
 func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 	jsonResp, err := json.Marshal(s.db.Health())

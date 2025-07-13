@@ -12,6 +12,30 @@ import (
 	"auth/internal/server"
 )
 
+type Role string
+
+const (
+	RoleAdmin Role = "admin"
+	RoleUser  Role = "user"
+)
+
+type IUser interface {
+	GenerateJWT() string
+}
+
+// change to interface and add some methods
+type User struct {
+	Id        string    `json:"id"`
+	FirstName string    `json:"first_name"`
+	LastName  string    `json:"last_name"`
+	Email     string    `json:"email"`
+	IsActive  *bool     `json:"is_active"` // user pointer to differentiate between 'no provided' and 'explicitly false'
+	Role      Role      `json:"role"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Password  string
+}
+
 func gracefulShutdown(apiServer *http.Server, done chan bool) {
 	// Create context that listens for the interrupt signal from the OS.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)

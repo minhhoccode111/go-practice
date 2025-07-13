@@ -1,52 +1,65 @@
-# Go Web Authentication and Authorization
+# Project auth
 
-Concepts:
+One Paragraph of project description goes here
 
-- Router
-- Middleware
-- Pagination
-- Filter
-- Soft-delete
-- Authorization
-- Authentication
-- Use `PATCH` verb
-- Database indexes
-- Database migration
-- Interface
-- Password hashing
-- Input validation + sanitization
-- Use pointer to differentiate between "no provided" and "explicitly false" in Go
+## Getting Started
 
-Features:
+These instructions will get you a copy of the project up and running on your
+local machine for development and testing purposes. See deployment for notes on
+how to deploy the project on a live system.
 
-APIs:
+## MakeFile
 
-```txt
-POST   /auth/register
-POST   /auth/login
-GET    /users/all
-    - admin can get all accounts
-GET    /users/{id}
-PUT    /users/{id}
-PATCH  /users/{id}/status
-    - users can deactivate their account
-    - only admin can activate an account
-PATCH  /users/{id}/password
-DELETE /users/{id}
-    - admin can hard-delete a user account
+Run build make command with tests
+
+```bash
+make all
 ```
 
-Database:
+Build the application
 
-```txt
-- Users:
-    - id
-    - role
-idx - email
-    - password
-    - is_active
-idx - last_name
-idx - first_name
-    - created_at
-    - updated_at
+```bash
+make build
+```
+
+Run the application
+
+```bash
+make run
+```
+
+Create DB container
+
+```bash
+make docker-run
+```
+
+Shutdown DB Container
+
+```bash
+make docker-down
+```
+
+DB Integrations Test:
+
+```bash
+make itest
+```
+
+Live reload the application:
+
+```bash
+make watch
+```
+
+Run the test suite:
+
+```bash
+make test
+```
+
+Clean up binary from the last build:
+
+```bash
+make clean
 ```
