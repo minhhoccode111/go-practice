@@ -1,3 +1,6 @@
+# load environment variables from .env
+include .env
+export
 # Simple Makefile for a Go project
 
 # Build the application
@@ -61,4 +64,33 @@ watch:
             fi; \
         fi
 
-.PHONY: all build run test clean watch docker-run docker-down itest
+# Goose migration config
+GOOSE=go run github.com/pressly/goose/v3/cmd/goose@latest
+DB_URL=postgres://$(DB_USERNAME):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_DATABASE)?sslmode=disable
+MIGRATIONS_DIR=internal/migrations
+
+# Run all migrations
+migrate-up:
+	@$(GOOSE) -dir $(MIGRATIONS_DIR) postgres "$(DB_URL)" up
+
+# Rollback last migration
+migrate-down:
+	@$(GOOSE) -dir $(MIGRATIONS_DIR) postgres "$(DB_URL)" down
+
+# Redo last migration
+migrate-redo:
+	@$(GOOSE) -dir $(MIGRATIONS_DIR) postgres "$(DB_URL)" redo
+
+# Show current migration status
+migrate-status:
+	@$(GOOSE) -dir $(MIGRATIONS_DIR) postgres "$(DB_URL)" status
+
+# Create a new migration file
+migrate-new:
+	@if [ -z "$(name)" ]; then \
+		echo "Usage: make migrate-new name=create_table"; \
+		exit 1; \
+	fi; \
+	$(GOOSE) create $(name) sql -dir $(MIGRATIONS_DIR)
+
+.PHONY: all build run test clean watch docker-run docker-down itest migrate-up migrate-down migrate-redo migrate-status migrate-new
