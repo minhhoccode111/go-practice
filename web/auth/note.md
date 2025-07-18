@@ -42,11 +42,7 @@ Database:
 - Users:
     - id
     - role
-idx - email
+idx - email     - unique
     - password
     - is_active
-idx - last_name
-idx - first_name
-    - created_at
-    - updated_at
 ```

@@ -4,10 +4,15 @@
 GET {{api}}/
 
 ###
-GET {{api}}/healthz
+GET {{api}}/health
 
 ###
 POST {{api}}/auth/register
+
+{
+    "email": "asd@gmail.com",
+    "password": "asdasd"
+}
 
 ###
 POST {{api}}/auth/login

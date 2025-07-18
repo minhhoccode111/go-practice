@@ -2,16 +2,16 @@ package server
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
-	"fmt"
-	"time"
-
 	"github.com/gorilla/mux"
-
-	"github.com/coder/websocket"
 )
+
+func WriteJSON(w http.ResponseWriter, status int, data any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(data)
+}
 
 func (s *Server) RegisterRoutes() http.Handler {
 	r := mux.NewRouter()
@@ -19,21 +19,29 @@ func (s *Server) RegisterRoutes() http.Handler {
 	// Apply CORS middleware
 	r.Use(s.corsMiddleware)
 
+	// public
 	r.HandleFunc("/", s.HelloWorldHandler)
-
+	r.HandleFunc("/health", s.healthHandler)
 	r.HandleFunc("/auth/register", s.RegisterHandler).Methods("POST")
 	r.HandleFunc("/auth/login", s.LoginHandler).Methods("POST")
 
-	r.HandleFunc("/users/all", s.GetUsersHandler).Methods("GET")
-	r.HandleFunc("/users/{id}", s.GetUserHandler).Methods("GET")
-	r.HandleFunc("/users/{id}", s.UpdateUserHandler).Methods("PUT")
-	r.HandleFunc("/users/{id}/status", s.StatusUserHandler).Methods("PATCH")
-	r.HandleFunc("/users/{id}/password", s.PasswordUserHandler).Methods("PATCH")
-	r.HandleFunc("/users/{id}", s.DeleteUserHandler).Methods("DELETE")
+	// user-authenticated routes
+	user := r.PathPrefix("/users").Subrouter()
+	user.Use(s.authMiddleware)
+	user.HandleFunc("/{id}", s.GetUserHandler).Methods("GET")
+	user.HandleFunc("/{id}", s.UpdateUserHandler).Methods("PUT")
+	user.HandleFunc("/{id}/password", s.PasswordUserHandler).Methods("PATCH")
+	// user can deactivate their account
+	// but only admin can activate an account
+	user.HandleFunc("/{id}/status", s.StatusUserHandler).Methods("PATCH")
 
-	r.HandleFunc("/health", s.healthHandler)
+	// admin-authorized routes
+	admin := r.PathPrefix("/users").Subrouter()
+	admin.Use(s.authMiddleware)
+	admin.Use(s.adminMiddleware)
+	admin.HandleFunc("/all", s.GetUsersHandler).Methods("GET")
+	admin.HandleFunc("/{id}", s.DeleteUserHandler).Methods("DELETE")
 
-	r.HandleFunc("/websocket", s.websocketHandler)
 	return r
 }
 
@@ -56,20 +64,32 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (s *Server) HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
-	resp := make(map[string]string)
-	resp["message"] = "Hello World"
-
-	jsonResp, err := json.Marshal(resp)
-	if err != nil {
-		log.Fatalf("error handling JSON marshal. Err: %v", err)
-	}
-
-	w.Header().Add("Content-Type", "application/json")
-	_, _ = w.Write(jsonResp)
+// Authentication middleware
+func (s *Server) authMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// check jwt, set user in context
+		next.ServeHTTP(w, r)
+	})
 }
 
-// TODO:
+// Authorization middleware
+func (s *Server) adminMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// get user from context, check role == admin
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (s *Server) HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
+	resJson := map[string]string{}
+	resJson["message"] = "Hello, World!"
+	WriteJSON(w, http.StatusOK, resJson)
+}
+
+func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
+	WriteJSON(w, http.StatusOK, s.db.Health())
+}
+
 func (s *Server) RegisterHandler(w http.ResponseWriter, r *http.Request)     {}
 func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request)        {}
 func (s *Server) GetUsersHandler(w http.ResponseWriter, r *http.Request)     {}
@@ -78,38 +98,3 @@ func (s *Server) UpdateUserHandler(w http.ResponseWriter, r *http.Request)   {}
 func (s *Server) StatusUserHandler(w http.ResponseWriter, r *http.Request)   {}
 func (s *Server) PasswordUserHandler(w http.ResponseWriter, r *http.Request) {}
 func (s *Server) DeleteUserHandler(w http.ResponseWriter, r *http.Request)   {}
-
-func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
-	jsonResp, err := json.Marshal(s.db.Health())
-
-	if err != nil {
-		log.Fatalf("error handling JSON marshal. Err: %v", err)
-	}
-
-	_, _ = w.Write(jsonResp)
-}
-
-func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
-	socket, err := websocket.Accept(w, r, nil)
-
-	if err != nil {
-		log.Printf("could not open websocket: %v", err)
-		_, _ = w.Write([]byte("could not open websocket"))
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	defer socket.Close(websocket.StatusGoingAway, "server closing websocket")
-
-	ctx := r.Context()
-	socketCtx := socket.CloseRead(ctx)
-
-	for {
-		payload := fmt.Sprintf("server timestamp: %d", time.Now().UnixNano())
-		err := socket.Write(socketCtx, websocket.MessageText, []byte(payload))
-		if err != nil {
-			break
-		}
-		time.Sleep(time.Second * 2)
-	}
-}
