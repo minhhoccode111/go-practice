@@ -1,8 +1,12 @@
 package server
 
 import (
+	"database/sql"
 	"encoding/json"
+	"log"
 	"net/http"
+
+	"auth/internal/model"
 
 	"github.com/gorilla/mux"
 )
@@ -90,7 +94,41 @@ func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusOK, s.db.Health())
 }
 
-func (s *Server) RegisterHandler(w http.ResponseWriter, r *http.Request)     {}
+func (s *Server) RegisterHandler(w http.ResponseWriter, r *http.Request) {
+	var userDTO model.User
+	if err := json.NewDecoder(r.Body).Decode(&userDTO); err != nil {
+		log.Printf("Error decode request body: %v", err)
+		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	if err := userDTO.IsValidEmail(); err != nil {
+		log.Printf("Error: %v", err)
+		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	if err := userDTO.IsValidPassword(); err != nil {
+		log.Printf("Error: %v", err)
+		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	userExisted, err := s.db.SelectUserByEmail(userDTO.Email)
+	if err != nil && err != sql.ErrNoRows {
+		log.Printf("Error: %v", err)
+		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	if userExisted != nil {
+		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "email already existed"})
+		return
+	}
+	err = s.db.InsertUser(&userDTO)
+	if err != nil {
+		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	// TODO: generate jwt to return
+	WriteJSON(w, http.StatusCreated, map[string]string{"message": "User registered successfully"})
+}
 func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request)        {}
 func (s *Server) GetUsersHandler(w http.ResponseWriter, r *http.Request)     {}
 func (s *Server) GetUserHandler(w http.ResponseWriter, r *http.Request)      {}

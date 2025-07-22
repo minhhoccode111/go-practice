@@ -1,6 +1,7 @@
 package database
 
 import (
+	"auth/internal/model"
 	"context"
 	"database/sql"
 	"fmt"
@@ -22,6 +23,12 @@ type Service interface {
 	// Close terminates the database connection.
 	// It returns an error if the connection cannot be closed.
 	Close() error
+
+	SelectUserById(id string) (*model.User, error)
+	SelectUserByEmail(email string) (*model.User, error)
+	InsertUser(user *model.User) error
+	UpdateUser(user *model.User) error
+	DeleteUser(id string) error
 }
 
 type service struct {
@@ -115,4 +122,50 @@ func (s *service) Health() map[string]string {
 func (s *service) Close() error {
 	log.Printf("Disconnected from database: %s", database)
 	return s.db.Close()
+}
+
+func (s *service) SelectUserById(id string) (*model.User, error) {
+	panic("unimplemented")
+}
+
+func (s *service) SelectUserByEmail(email string) (*model.User, error) {
+	var user model.User
+	err := s.db.QueryRow(`
+		select id, email, is_active, role, password
+		from users
+		where email = $1
+		`, email).
+		Scan(&user.Id, &user.Email, &user.IsActive, &user.Role, &user.Password)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (s *service) InsertUser(user *model.User) error {
+	hashedPassword, err := user.HashedPassword()
+	if err != nil {
+		return fmt.Errorf("Error hashing password: %v", err)
+	}
+	_, err = s.db.Exec(`
+		insert into users(email, is_active, role, password)
+		values($1, $2, $3, $4)
+		`,
+		user.Email,
+		true,
+		model.RoleUser,
+		hashedPassword,
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *service) UpdateUser(user *model.User) error {
+	panic("unimplemented")
+}
+
+func (s *service) DeleteUser(id string) error {
+	panic("unimplemented")
 }
