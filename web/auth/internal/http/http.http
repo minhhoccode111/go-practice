@@ -10,7 +10,7 @@ GET {{api}}/health
 POST {{api}}/auth/register
 
 {
-    "email": "asdasd@gmail.com",
+    "email": "asdlkj1@gmail.com",
     "password": "Bruh0!0!"
 }
 

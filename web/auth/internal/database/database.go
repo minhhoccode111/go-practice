@@ -147,15 +147,17 @@ func (s *service) InsertUser(user *model.User) error {
 	if err != nil {
 		return fmt.Errorf("Error hashing password: %v", err)
 	}
-	_, err = s.db.Exec(`
+	result := s.db.QueryRow(`
 		insert into users(email, is_active, role, password)
 		values($1, $2, $3, $4)
+		returning id
 		`,
 		user.Email,
 		true,
 		model.RoleUser,
 		hashedPassword,
 	)
+	err = result.Scan(&user.Id)
 	if err != nil {
 		return err
 	}

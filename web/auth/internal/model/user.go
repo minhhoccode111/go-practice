@@ -1,11 +1,16 @@
 package model
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 	"unicode"
 
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -22,6 +27,19 @@ type User struct {
 	IsActive *bool  `json:"is_active"`
 	Role     Role   `json:"role"`
 	Password string
+}
+
+func (u *User) GenerateJWT(secret []byte) (string, error) {
+	priv, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+	if err != nil {
+		return "", err
+	}
+	token := jwt.New(jwt.SigningMethodES256)
+	signedToken, err := token.SignedString(priv)
+	if err != nil {
+		return "", err
+	}
+	return signedToken, nil
 }
 
 func (u *User) HashedPassword() (string, error) {

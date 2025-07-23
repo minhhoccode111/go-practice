@@ -126,8 +126,12 @@ func (s *Server) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
-	// TODO: generate jwt to return
-	WriteJSON(w, http.StatusCreated, map[string]string{"message": "User registered successfully"})
+	token, err := userDTO.GenerateJWT([]byte("RrSdzkBuEPYjUrcNT3Yo5Rkv-c61nDYhdiODhiTBgvc"))
+	if err != nil {
+		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	WriteJSON(w, http.StatusCreated, map[string]string{"token": token})
 }
 func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request)        {}
 func (s *Server) GetUsersHandler(w http.ResponseWriter, r *http.Request)     {}
