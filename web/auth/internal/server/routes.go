@@ -193,8 +193,11 @@ func (s *Server) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusOK, user.ToUserDTO())
 }
 
+func (s *Server) GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
+
+}
+
 func (s *Server) UpdateUserHandler(w http.ResponseWriter, r *http.Request)   {}
 func (s *Server) StatusUserHandler(w http.ResponseWriter, r *http.Request)   {}
 func (s *Server) PasswordUserHandler(w http.ResponseWriter, r *http.Request) {}
-func (s *Server) GetAllUsersHandler(w http.ResponseWriter, r *http.Request)  {}
 func (s *Server) DeleteUserHandler(w http.ResponseWriter, r *http.Request)   {}

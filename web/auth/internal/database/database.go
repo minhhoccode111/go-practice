@@ -24,6 +24,7 @@ type Service interface {
 	// It returns an error if the connection cannot be closed.
 	Close() error
 
+	SelectUsers(limit, offset int, filter string) ([]*model.UserDTO, error)
 	SelectUserById(id string) (*model.User, error)
 	SelectUserByEmail(email string) (*model.User, error)
 	InsertUser(user *model.User) error
@@ -122,6 +123,15 @@ func (s *service) Health() map[string]string {
 func (s *service) Close() error {
 	log.Printf("Disconnected from database: %s", database)
 	return s.db.Close()
+}
+
+func (s *service) SelectUsers(limit int, offset int, filter string) ([]*model.UserDTO, error) {
+	rows, err := s.db.Query(`
+		select id, email, is_active, role
+		`)
+	_ = err
+	_ = rows
+	return nil, nil
 }
 
 func (s *service) SelectUserById(id string) (*model.User, error) {
