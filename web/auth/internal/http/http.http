@@ -10,12 +10,17 @@ GET {{api}}/health
 POST {{api}}/auth/register
 
 {
-    "email": "asdlkj1@gmail.com",
+    "email": "asd7@gmail.com",
     "password": "Bruh0!0!"
 }
 
 ###
 POST {{api}}/auth/login
+
+{
+    "email": "minhhoccode111@gmail.com",
+    "password": "asdasd"
+}
 
 ###
 GET {{api}}/users/all

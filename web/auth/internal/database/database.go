@@ -158,6 +158,7 @@ func (s *service) InsertUser(user *model.User) error {
 		hashedPassword,
 	)
 	err = result.Scan(&user.Id)
+	user.Role = model.RoleUser
 	if err != nil {
 		return err
 	}

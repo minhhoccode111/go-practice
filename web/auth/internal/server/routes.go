@@ -11,6 +11,12 @@ import (
 	"github.com/gorilla/mux"
 )
 
+func WriteText(w http.ResponseWriter, status int, data string) {
+	w.Header().Set("Content-Type", "application/text")
+	w.WriteHeader(status)
+	w.Write([]byte(data))
+}
+
 func WriteJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -85,9 +91,7 @@ func (s *Server) adminMiddleware(next http.Handler) http.Handler {
 }
 
 func (s *Server) HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
-	resJson := map[string]string{}
-	resJson["message"] = "Hello, World!"
-	WriteJSON(w, http.StatusOK, resJson)
+	WriteJSON(w, http.StatusOK, map[string]string{"message": "Hello, World!"})
 }
 
 func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
@@ -118,7 +122,7 @@ func (s *Server) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if userExisted != nil {
-		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "email already existed"})
+		WriteJSON(w, http.StatusConflict, map[string]string{"error": "email already existed"})
 		return
 	}
 	err = s.db.InsertUser(&userDTO)
@@ -126,14 +130,43 @@ func (s *Server) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
-	token, err := userDTO.GenerateJWT([]byte("RrSdzkBuEPYjUrcNT3Yo5Rkv-c61nDYhdiODhiTBgvc"))
+	token, err := userDTO.GenerateJWT()
 	if err != nil {
 		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
-	WriteJSON(w, http.StatusCreated, map[string]string{"token": token})
+	WriteJSON(w, http.StatusCreated, token)
 }
-func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request)        {}
+
+func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
+	var userDTO model.User
+	if err := json.NewDecoder(r.Body).Decode(&userDTO); err != nil {
+		log.Printf("Error decode request body: %v", err)
+		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+
+	userExisted, err := s.db.SelectUserByEmail(userDTO.Email)
+	if err != nil && err == sql.ErrNoRows {
+		WriteJSON(w, http.StatusUnauthorized,
+			map[string]string{"message": "email or password incorrect"},
+		)
+		return
+	}
+	if !userExisted.ValidatePassword(userDTO.Password) {
+		WriteJSON(w, http.StatusUnauthorized,
+			map[string]string{"message": "email or password incorrect"},
+		)
+		return
+	}
+	token, err := userDTO.GenerateJWT()
+	if err != nil {
+		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	WriteJSON(w, http.StatusCreated, token)
+}
+
 func (s *Server) GetUsersHandler(w http.ResponseWriter, r *http.Request)     {}
 func (s *Server) GetUserHandler(w http.ResponseWriter, r *http.Request)      {}
 func (s *Server) UpdateUserHandler(w http.ResponseWriter, r *http.Request)   {}

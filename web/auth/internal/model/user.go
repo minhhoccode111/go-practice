@@ -1,10 +1,8 @@
 package model
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
 	"time"
@@ -29,17 +27,25 @@ type User struct {
 	Password string
 }
 
-func (u *User) GenerateJWT(secret []byte) (string, error) {
-	priv, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+func (u *User) GenerateJWT() (string, error) {
+	secretKey := []byte("secret_key")
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub":   u.Id,
+		"email": u.Email,
+		"role":  u.Role,
+		"exp":   time.Now().Add(time.Hour * 24).Unix(),
+		"iat":   time.Now().Unix(),
+	})
+	tokenString, err := token.SignedString(secretKey)
 	if err != nil {
-		return "", err
+		log.Printf("error signing token: %v", err)
+		return "", fmt.Errorf("error signing token: %v", err)
 	}
-	token := jwt.New(jwt.SigningMethodES256)
-	signedToken, err := token.SignedString(priv)
-	if err != nil {
-		return "", err
-	}
-	return signedToken, nil
+	return tokenString, nil
+}
+
+func (u *User) ValidatePassword(password string) bool {
+	return bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)) == nil
 }
 
 func (u *User) HashedPassword() (string, error) {
