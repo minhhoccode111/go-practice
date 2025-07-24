@@ -26,7 +26,10 @@ POST {{api}}/auth/login
 GET {{api}}/users/all
 
 ###
-GET {{api}}/users/{id}
+@id = 063452dc-c6ee-45d8-ab31-bd67e1acf8a3
+@id = e9c26eac-e339-4a97-b25b-dbfe19dc5e8c
+###
+GET {{api}}/users/{{id}}
 
 ###
 PUT {{api}}/users/{id}

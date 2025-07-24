@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"log"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -27,8 +28,26 @@ type User struct {
 	Password string
 }
 
+type UserDTO struct {
+	Id       string `json:"id"`
+	Email    string `json:"email"`
+	IsActive *bool  `json:"is_active"`
+	Role     Role   `json:"role"`
+}
+
+var jwtSecret = os.Getenv("JWT_SECRET")
+
+func (u *User) ToUserDTO() UserDTO {
+	return UserDTO{
+		Id:       u.Id,
+		Email:    u.Email,
+		IsActive: u.IsActive,
+		Role:     u.Role,
+	}
+}
+
 func (u *User) GenerateJWT() (string, error) {
-	secretKey := []byte("secret_key")
+	secretKey := []byte(jwtSecret)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub":   u.Id,
 		"email": u.Email,

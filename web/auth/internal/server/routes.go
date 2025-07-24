@@ -3,13 +3,17 @@ package server
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"auth/internal/model"
 
 	"github.com/gorilla/mux"
 )
+
+type JSON map[string]any
 
 func WriteText(w http.ResponseWriter, status int, data string) {
 	w.Header().Set("Content-Type", "application/text")
@@ -34,12 +38,13 @@ func (s *Server) RegisterRoutes() http.Handler {
 	r.HandleFunc("/health", s.healthHandler)
 	r.HandleFunc("/auth/register", s.RegisterHandler).Methods("POST")
 	r.HandleFunc("/auth/login", s.LoginHandler).Methods("POST")
+	r.HandleFunc("/users/{id}", s.GetUserHandler).Methods("GET")
+	r.HandleFunc("/users/all", s.GetAllUsersHandler).Methods("GET")
 
 	// user-authenticated routes
 	user := r.PathPrefix("/users").Subrouter()
 	user.Use(s.authMiddleware)
-	user.HandleFunc("/{id}", s.GetUserHandler).Methods("GET")
-	user.HandleFunc("/{id}", s.UpdateUserHandler).Methods("PUT")
+	user.HandleFunc("/{id}", s.UpdateUserHandler).Methods("PATCH")
 	user.HandleFunc("/{id}/password", s.PasswordUserHandler).Methods("PATCH")
 	// user can deactivate their account
 	// but only admin can activate an account
@@ -49,7 +54,6 @@ func (s *Server) RegisterRoutes() http.Handler {
 	admin := r.PathPrefix("/users").Subrouter()
 	admin.Use(s.authMiddleware)
 	admin.Use(s.adminMiddleware)
-	admin.HandleFunc("/all", s.GetUsersHandler).Methods("GET")
 	admin.HandleFunc("/{id}", s.DeleteUserHandler).Methods("DELETE")
 
 	return r
@@ -91,7 +95,7 @@ func (s *Server) adminMiddleware(next http.Handler) http.Handler {
 }
 
 func (s *Server) HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
-	WriteJSON(w, http.StatusOK, map[string]string{"message": "Hello, World!"})
+	WriteJSON(w, http.StatusOK, JSON{"message": "Hello, World!"})
 }
 
 func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
@@ -102,37 +106,37 @@ func (s *Server) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	var userDTO model.User
 	if err := json.NewDecoder(r.Body).Decode(&userDTO); err != nil {
 		log.Printf("Error decode request body: %v", err)
-		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		WriteJSON(w, http.StatusBadRequest, JSON{"error": err.Error()})
 		return
 	}
 	if err := userDTO.IsValidEmail(); err != nil {
 		log.Printf("Error: %v", err)
-		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		WriteJSON(w, http.StatusBadRequest, JSON{"error": err.Error()})
 		return
 	}
 	if err := userDTO.IsValidPassword(); err != nil {
 		log.Printf("Error: %v", err)
-		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		WriteJSON(w, http.StatusBadRequest, JSON{"error": err.Error()})
 		return
 	}
 	userExisted, err := s.db.SelectUserByEmail(userDTO.Email)
 	if err != nil && err != sql.ErrNoRows {
 		log.Printf("Error: %v", err)
-		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
 		return
 	}
 	if userExisted != nil {
-		WriteJSON(w, http.StatusConflict, map[string]string{"error": "email already existed"})
+		WriteJSON(w, http.StatusConflict, JSON{"error": "email already existed"})
 		return
 	}
 	err = s.db.InsertUser(&userDTO)
 	if err != nil {
-		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
 		return
 	}
 	token, err := userDTO.GenerateJWT()
 	if err != nil {
-		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
 		return
 	}
 	WriteJSON(w, http.StatusCreated, token)
@@ -142,34 +146,55 @@ func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var userDTO model.User
 	if err := json.NewDecoder(r.Body).Decode(&userDTO); err != nil {
 		log.Printf("Error decode request body: %v", err)
-		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		WriteJSON(w, http.StatusBadRequest, JSON{"error": err.Error()})
 		return
 	}
 
 	userExisted, err := s.db.SelectUserByEmail(userDTO.Email)
-	if err != nil && err == sql.ErrNoRows {
-		WriteJSON(w, http.StatusUnauthorized,
-			map[string]string{"message": "email or password incorrect"},
-		)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "email notfound"})
+			return
+		}
+		log.Printf("Error: %v", err)
+		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
 		return
 	}
+	fmt.Println(userDTO)
 	if !userExisted.ValidatePassword(userDTO.Password) {
 		WriteJSON(w, http.StatusUnauthorized,
-			map[string]string{"message": "email or password incorrect"},
+			JSON{"error": "password incorrect"},
 		)
 		return
 	}
+
 	token, err := userDTO.GenerateJWT()
 	if err != nil {
-		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
 		return
 	}
-	WriteJSON(w, http.StatusCreated, token)
+	WriteJSON(w, http.StatusOK, token)
 }
 
-func (s *Server) GetUsersHandler(w http.ResponseWriter, r *http.Request)     {}
-func (s *Server) GetUserHandler(w http.ResponseWriter, r *http.Request)      {}
+func (s *Server) GetUserHandler(w http.ResponseWriter, r *http.Request) {
+	paths := strings.Split(r.URL.Path, "/")
+	userid := paths[len(paths)-1]
+	user, err := s.db.SelectUserById(userid)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			WriteJSON(w, http.StatusNotFound, JSON{
+				"error": "user not found",
+			})
+		} else {
+			log.Printf("Error: %v", err)
+		}
+		return
+	}
+	WriteJSON(w, http.StatusOK, user.ToUserDTO())
+}
+
 func (s *Server) UpdateUserHandler(w http.ResponseWriter, r *http.Request)   {}
 func (s *Server) StatusUserHandler(w http.ResponseWriter, r *http.Request)   {}
 func (s *Server) PasswordUserHandler(w http.ResponseWriter, r *http.Request) {}
+func (s *Server) GetAllUsersHandler(w http.ResponseWriter, r *http.Request)  {}
 func (s *Server) DeleteUserHandler(w http.ResponseWriter, r *http.Request)   {}

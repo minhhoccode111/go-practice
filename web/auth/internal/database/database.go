@@ -125,7 +125,17 @@ func (s *service) Close() error {
 }
 
 func (s *service) SelectUserById(id string) (*model.User, error) {
-	panic("unimplemented")
+	var user model.User
+	err := s.db.QueryRow(`
+		select id, email, is_active, role, password
+		from users
+		where id = $1
+		`, id).
+		Scan(&user.Id, &user.Email, &user.IsActive, &user.Role, &user.Password)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 func (s *service) SelectUserByEmail(email string) (*model.User, error) {
