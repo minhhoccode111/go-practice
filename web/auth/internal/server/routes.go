@@ -198,6 +198,7 @@ func (s *Server) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 	perPageStr := r.URL.Query().Get("perPage")
 	pageNumberStr := r.URL.Query().Get("pageNumber")
+	allStr := r.URL.Query().Get("all")
 	filter := r.URL.Query().Get("q")
 	var err error
 
@@ -209,14 +210,15 @@ func (s *Server) GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil || pageNumber < 1 {
 		pageNumber = 1
 	}
+	isGetAll := allStr == "true"
 	offset := (pageNumber - 1) * limit
-	users, err := s.db.SelectUsers(limit, offset, filter)
+	users, err := s.db.SelectUsers(limit, offset, filter, isGetAll)
 	if err != nil {
 		log.Printf("error: %v", err)
 		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
 		return
 	}
-	countUsers, err := s.db.CountUsers(filter)
+	countUsers, err := s.db.CountUsers(filter, isGetAll)
 	if err != nil {
 		log.Printf("error: %v", err)
 		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})

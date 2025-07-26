@@ -21,19 +21,30 @@ Features:
 
 APIs:
 
-```txt
+```rust
+# public
 POST   /auth/register
 POST   /auth/login
 GET    /users/all
-    - admin can get all accounts
+    - filter email, status
+    - pagination
+    - TODO: only admin can get all users including inactive
 GET    /users/{id}
-PUT    /users/{id}
-PATCH  /users/{id}/status
-    - users can deactivate their account
-    - only admin can activate an account
+
+# auth
+PATCH  /users/{id}
+    - user update their profile, like email, bio, etc.
 PATCH  /users/{id}/password
+    - user update their password, must provide old password
+PATCH  /users/{id}/status
+    - user deactivate her account (soft-delete)
+    - only admin can activate an account
+
+# authz
 DELETE /users/{id}
-    - admin can hard-delete a user account
+    - admin hard-delete an account
+PATCH  /users/{id}/role
+    - admin make a user an admin
 ```
 
 Database:

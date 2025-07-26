@@ -25,8 +25,9 @@ POST {{api}}/auth/login
 ###
 GET {{api}}/users/all
     ?pageNumber=1
-    &perPage=4
-    &q=
+    &perPage=10
+    &q=1
+    &all=true
 
 ###
 @id = 063452dc-c6ee-45d8-ab31-bd67e1acf8a3
