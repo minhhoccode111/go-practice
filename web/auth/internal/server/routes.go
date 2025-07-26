@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"auth/internal/model"
@@ -38,8 +39,9 @@ func (s *Server) RegisterRoutes() http.Handler {
 	r.HandleFunc("/health", s.healthHandler)
 	r.HandleFunc("/auth/register", s.RegisterHandler).Methods("POST")
 	r.HandleFunc("/auth/login", s.LoginHandler).Methods("POST")
-	r.HandleFunc("/users/{id}", s.GetUserHandler).Methods("GET")
+	// WARN: must define '/all' before '/{id}'
 	r.HandleFunc("/users/all", s.GetAllUsersHandler).Methods("GET")
+	r.HandleFunc("/users/{id}", s.GetUserHandler).Methods("GET")
 
 	// user-authenticated routes
 	user := r.PathPrefix("/users").Subrouter()
@@ -194,7 +196,42 @@ func (s *Server) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
+	perPageStr := r.URL.Query().Get("perPage")
+	pageNumberStr := r.URL.Query().Get("pageNumber")
+	filter := r.URL.Query().Get("q")
+	var err error
 
+	limit, err := strconv.Atoi(perPageStr)
+	if err != nil || limit < 1 {
+		limit = 10
+	}
+	pageNumber, err := strconv.Atoi(pageNumberStr)
+	if err != nil || pageNumber < 1 {
+		pageNumber = 1
+	}
+	offset := (pageNumber - 1) * limit
+	users, err := s.db.SelectUsers(limit, offset, filter)
+	if err != nil {
+		log.Printf("error: %v", err)
+		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
+		return
+	}
+	countUsers, err := s.db.CountUsers(filter)
+	if err != nil {
+		log.Printf("error: %v", err)
+		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
+		return
+	}
+	divideAndRoundUp := func(a, b int) int {
+		return (a + b - 1) / b // e.g. 10 / 3 = (10 + 3 - 1) / 3 = 4
+	}
+
+	WriteJSON(w, http.StatusOK, JSON{
+		"users":      users,
+		"totalPage":  divideAndRoundUp(countUsers, limit),
+		"perPage":    limit,
+		"pageNumber": pageNumber,
+	})
 }
 
 func (s *Server) UpdateUserHandler(w http.ResponseWriter, r *http.Request)   {}

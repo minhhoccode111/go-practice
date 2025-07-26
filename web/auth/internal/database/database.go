@@ -24,6 +24,7 @@ type Service interface {
 	// It returns an error if the connection cannot be closed.
 	Close() error
 
+	CountUsers(filter string) (int, error)
 	SelectUsers(limit, offset int, filter string) ([]*model.UserDTO, error)
 	SelectUserById(id string) (*model.User, error)
 	SelectUserByEmail(email string) (*model.User, error)
@@ -125,13 +126,49 @@ func (s *service) Close() error {
 	return s.db.Close()
 }
 
+func (s *service) CountUsers(filter string) (int, error) {
+	var count int
+	err := s.db.QueryRow(`
+		select count(*)
+		from users
+		where email ilike '%' || $1 || '%'
+		`,
+		filter,
+	).Scan(&count)
+	if err != nil {
+		log.Printf("Database error: %v", err)
+		return 0, err
+	}
+	return count, nil
+}
+
 func (s *service) SelectUsers(limit int, offset int, filter string) ([]*model.UserDTO, error) {
 	rows, err := s.db.Query(`
 		select id, email, is_active, role
-		`)
-	_ = err
-	_ = rows
-	return nil, nil
+		from users
+		where email ilike '%' || $1 || '%'
+		limit $2
+		offset $3
+		`,
+		filter,
+		limit,
+		offset,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("Error SelectUsers: %v", err)
+	}
+	defer rows.Close()
+	var users = []*model.UserDTO{}
+	for rows.Next() {
+		var user model.UserDTO
+		err := rows.Scan(&user.Id, &user.Email, &user.IsActive, &user.Role)
+		if err != nil {
+			log.Printf("Error Scan UserDTO: %v", err)
+			return nil, err
+		}
+		users = append(users, &user)
+	}
+	return users, nil
 }
 
 func (s *service) SelectUserById(id string) (*model.User, error) {

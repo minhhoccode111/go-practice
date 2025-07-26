@@ -9,3 +9,6 @@ VALUES (
   'user'::user_role
   );
 
+
+select * from users where email ilike '%' || 'm' || '%';
+
