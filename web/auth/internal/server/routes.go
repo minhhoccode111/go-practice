@@ -236,7 +236,9 @@ func (s *Server) GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (s *Server) UpdateUserHandler(w http.ResponseWriter, r *http.Request)   {}
+func (s *Server) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
+
+}
 func (s *Server) StatusUserHandler(w http.ResponseWriter, r *http.Request)   {}
 func (s *Server) PasswordUserHandler(w http.ResponseWriter, r *http.Request) {}
 func (s *Server) DeleteUserHandler(w http.ResponseWriter, r *http.Request)   {}

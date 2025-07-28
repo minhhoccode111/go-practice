@@ -12,7 +12,7 @@ VALUES (
 -- create a dummy user
 INSERT INTO users (email, password, is_active, role)
 VALUES (
-  'asd1@gmail.com',
+  'asd8@gmail.com',
   '$2a$10$I9ZdFZ1OMx.LO3dnmv65DO344FPoaUj8LXXv01jzmIgIKFAqF5uia', -- "asdasd"
   false,
   'user'::user_role

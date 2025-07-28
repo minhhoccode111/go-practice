@@ -3,17 +3,18 @@
 Concepts:
 
 - Router
+- Filter
+- Context
+- Interface
 - Middleware
 - Pagination
-- Filter
 - Soft-delete
 - Authorization
 - Authentication
 - Use `PATCH` verb
 - Database indexes
-- Database migration
-- Interface
 - Password hashing
+- Database migration
 - Input validation + sanitization
 - Use pointer to differentiate between "no provided" and "explicitly false" in Go
 
