@@ -1,4 +1,7 @@
 @api = http://localhost:8080
 
-###
+### can't try this
 GET {{api}}/search?q=foo&timeout=1s
+
+### because this returns not found
+GET https://ajax.googleapis.com/ajax/services/search/web?v=1.0
