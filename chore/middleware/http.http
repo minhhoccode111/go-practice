@@ -1,0 +1,7 @@
+@api = localhost:3000/v1
+
+###
+GET {{api}}/hello
+
+###
+GET {{api}}/time
