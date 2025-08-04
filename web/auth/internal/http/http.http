@@ -36,7 +36,10 @@ GET {{api}}/users/all
 GET {{api}}/users/{{id}}
 
 ###
-PUT {{api}}/users/{id}
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTQ0MTAxNjcsImlhdCI6MTc1NDMyMzc2NywidXNlckVtYWlsIjoibWluaGhvY2NvZGUxMTFAZ21haWwuY29tIiwidXNlcklkIjoiZTljMjZlYWMtZTMzOS00YTk3LWIyNWItZGJmZTE5ZGM1ZThjIiwidXNlclJvbGUiOiJhZG1pbiJ9.95Q6oJLnMpR4GL8SWRkkqHt1Uw-SyNMGMI8SgGhSZM0
+###
+PATCH {{api}}/users/{{id}}
+Authorization: Bearer {{token}}
 
 ###
 PATCH {{api}}/users/{id}/status

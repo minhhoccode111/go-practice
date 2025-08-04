@@ -35,7 +35,7 @@ type UserDTO struct {
 	Role     Role   `json:"role"`
 }
 
-var jwtSecret = os.Getenv("JWT_SECRET")
+var JwtSecret = os.Getenv("JWT_SECRET")
 
 func (u *User) ToUserDTO() UserDTO {
 	return UserDTO{
@@ -47,13 +47,13 @@ func (u *User) ToUserDTO() UserDTO {
 }
 
 func (u *User) GenerateJWT() (string, error) {
-	secretKey := []byte(jwtSecret)
+	secretKey := []byte(JwtSecret)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub":   u.Id,
-		"email": u.Email,
-		"role":  u.Role,
-		"exp":   time.Now().Add(time.Hour * 24).Unix(),
-		"iat":   time.Now().Unix(),
+		"userId":    u.Id,
+		"userEmail": u.Email,
+		"userRole":  u.Role,
+		"exp":       time.Now().Add(time.Hour * 24).Unix(),
+		"iat":       time.Now().Unix(),
 	})
 	tokenString, err := token.SignedString(secretKey)
 	if err != nil {

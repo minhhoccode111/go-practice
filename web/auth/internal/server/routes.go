@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -11,10 +12,18 @@ import (
 
 	"auth/internal/model"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/mux"
 )
 
 type JSON map[string]any
+type ctxKey string
+
+const (
+	ctxUserIdKey    ctxKey = "userId"
+	ctxUserEmailKey ctxKey = "userEmail"
+	ctxUserRoleKey  ctxKey = "userRole"
+)
 
 func WriteText(w http.ResponseWriter, status int, data string) {
 	w.Header().Set("Content-Type", "application/text")
@@ -83,8 +92,59 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 // Authentication middleware
 func (s *Server) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// check jwt, set user in context
-		next.ServeHTTP(w, r)
+		// get authentication header
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "no authorization header"})
+			return
+		}
+		parts := strings.Fields(authHeader)
+		if !strings.EqualFold(parts[0], "Bearer") {
+			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "authorization must start with 'Bearer'"})
+			return
+		}
+		if len(parts) != 2 {
+			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "authorization must be formatted as 'Bearer <token>'"})
+			return
+		}
+		tokenStr := parts[1]
+		token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (any, error) {
+			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+			}
+			return []byte(model.JwtSecret), nil
+		})
+		log.Printf("%v\n", token)
+		log.Printf("%v\n", err)
+		if err != nil || !token.Valid {
+			WriteJSON(w, http.StatusUnauthorized, "invalid token")
+			return
+		}
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok {
+			WriteJSON(w, http.StatusUnauthorized, "invalid token claims")
+			return
+		}
+		userId, ok := claims["userId"].(string)
+		if !ok || userId == "" {
+			WriteJSON(w, http.StatusUnauthorized, "missing userId in token")
+			return
+		}
+		userEmail, ok := claims["userEmail"].(string)
+		if !ok || userEmail == "" {
+			WriteJSON(w, http.StatusUnauthorized, "missing userEmail in token")
+			return
+		}
+		userRole, ok := claims["userRole"].(string)
+		if !ok || userRole == "" {
+			WriteJSON(w, http.StatusUnauthorized, "missing userRole in token")
+			return
+		}
+		// inject into context
+		ctx := context.WithValue(r.Context(), ctxUserIdKey, userId)
+		ctx = context.WithValue(ctx, ctxUserEmailKey, userEmail)
+		ctx = context.WithValue(ctx, ctxUserRoleKey, userRole)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
@@ -162,7 +222,7 @@ func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
 		return
 	}
-	fmt.Println(userDTO)
+	log.Println(userExisted)
 	if !userExisted.ValidatePassword(userDTO.Password) {
 		WriteJSON(w, http.StatusUnauthorized,
 			JSON{"error": "password incorrect"},
@@ -170,7 +230,7 @@ func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := userDTO.GenerateJWT()
+	token, err := userExisted.GenerateJWT()
 	if err != nil {
 		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
 		return
@@ -237,7 +297,12 @@ func (s *Server) GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
-
+	// TODO: actually implement
+	WriteJSON(w, http.StatusOK, JSON{
+		"userId":    r.Context().Value(ctxUserIdKey),
+		"userEmail": r.Context().Value(ctxUserEmailKey),
+		"userRole":  r.Context().Value(ctxUserRoleKey),
+	})
 }
 func (s *Server) StatusUserHandler(w http.ResponseWriter, r *http.Request)   {}
 func (s *Server) PasswordUserHandler(w http.ResponseWriter, r *http.Request) {}
