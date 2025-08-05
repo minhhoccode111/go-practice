@@ -297,12 +297,45 @@ func (s *Server) GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO: actually implement
-	WriteJSON(w, http.StatusOK, JSON{
-		"userId":    r.Context().Value(ctxUserIdKey),
-		"userEmail": r.Context().Value(ctxUserEmailKey),
-		"userRole":  r.Context().Value(ctxUserRoleKey),
-	})
+	// // TODO: actually implement
+	// WriteJSON(w, http.StatusOK, JSON{
+	// 	"userId":    r.Context().Value(ctxUserIdKey),
+	// 	"userEmail": r.Context().Value(ctxUserEmailKey),
+	// 	"userRole":  r.Context().Value(ctxUserRoleKey),
+	// })
+	var user model.User
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		log.Printf("Error decode request body: %v", err)
+		WriteJSON(w, http.StatusBadRequest, JSON{"error": err.Error()})
+		return
+	}
+	// check if incoming email is valid
+	if err := user.IsValidEmail(); err != nil {
+		log.Printf("Error: %v", err)
+		WriteJSON(w, http.StatusBadRequest, JSON{"error": err.Error()})
+		return
+	}
+	// no need to check for uniqueness, if error occurs, just return to client
+
+	// no need to check if type assertions are successful because we did that in
+	// authenticate middleware already
+	userId := r.Context().Value(ctxUserIdKey).(string)
+	userEmail := r.Context().Value(ctxUserEmailKey).(string)
+	// query database to check if user exists and is_active before updating
+	existedUser, err := s.db.SelectUserById(userId)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "userId notfound"})
+			return
+		}
+		log.Printf("Error: %v", err)
+		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
+		return
+	}
+	if existedUser.Email != userEmail {
+		// TODO:
+	}
+	updatedUser, err := s.db.UpdateUserEmail(userId, &user)
 }
 func (s *Server) StatusUserHandler(w http.ResponseWriter, r *http.Request)   {}
 func (s *Server) PasswordUserHandler(w http.ResponseWriter, r *http.Request) {}

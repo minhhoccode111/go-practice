@@ -29,11 +29,12 @@ type Service interface {
 	SelectUserById(id string) (*model.User, error)
 	SelectUserByEmail(email string) (*model.User, error)
 	InsertUser(user *model.User) error
-	UpdateUser(user *model.User) error
+	UpdateUserEmail(id string, user *model.UserDTO) (*model.UserDTO, error)
 	DeleteUser(id string) error
 }
 
 type service struct {
+	// TODO: add context to every query execution
 	db *sql.DB
 }
 
@@ -225,16 +226,28 @@ func (s *service) InsertUser(user *model.User) error {
 		model.RoleUser,
 		hashedPassword,
 	)
-	err = result.Scan(&user.Id)
 	user.Role = model.RoleUser
-	if err != nil {
+	if err := result.Scan(&user.Id); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *service) UpdateUser(user *model.User) error {
-	panic("unimplemented")
+func (s *service) UpdateUserEmail(id string, user *model.UserDTO) (*model.UserDTO, error) {
+	result := s.db.QueryRow(`
+		update users
+		set email = $1
+		where id = $2
+		returning id, role, email, is_active
+		`,
+		user.Email,
+		id,
+	)
+	var userDTO model.UserDTO
+	if err := result.Scan(&userDTO.Id, &userDTO.Role, &userDTO.Email, &userDTO.IsActive); err != nil {
+
+	}
+	return &model.UserDTO{}, nil
 }
 
 func (s *service) DeleteUser(id string) error {

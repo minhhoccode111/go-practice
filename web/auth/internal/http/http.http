@@ -18,7 +18,7 @@ POST {{api}}/auth/register
 POST {{api}}/auth/login
 
 {
-    "email": "minhhoccode111@gmail.com",
+    "email": "asd@gmail.com",
     "password": "asdasd"
 }
 
@@ -30,22 +30,27 @@ GET {{api}}/users/all
     &all=true
 
 ###
-@id = 063452dc-c6ee-45d8-ab31-bd67e1acf8a3
 @id = e9c26eac-e339-4a97-b25b-dbfe19dc5e8c
+@id = 063452dc-c6ee-45d8-ab31-bd67e1acf8a3
 ###
 GET {{api}}/users/{{id}}
 
 ###
 @token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTQ0MTAxNjcsImlhdCI6MTc1NDMyMzc2NywidXNlckVtYWlsIjoibWluaGhvY2NvZGUxMTFAZ21haWwuY29tIiwidXNlcklkIjoiZTljMjZlYWMtZTMzOS00YTk3LWIyNWItZGJmZTE5ZGM1ZThjIiwidXNlclJvbGUiOiJhZG1pbiJ9.95Q6oJLnMpR4GL8SWRkkqHt1Uw-SyNMGMI8SgGhSZM0
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTQ0ODg5MzMsImlhdCI6MTc1NDQwMjUzMywidXNlckVtYWlsIjoiYXNkQGdtYWlsLmNvbSIsInVzZXJJZCI6IjA2MzQ1MmRjLWM2ZWUtNDVkOC1hYjMxLWJkNjdlMWFjZjhhMyIsInVzZXJSb2xlIjoidXNlciJ9.xj7Ud_WC0LN7CYEQjqrk9e4conYZpDqbayJkIJLn-bM
 ###
 PATCH {{api}}/users/{{id}}
 Authorization: Bearer {{token}}
 
-###
-PATCH {{api}}/users/{id}/status
+{
+    "email": "asd9@gmail.com"
+}
 
 ###
-PATCH {{api}}/users/{id}/password
+PATCH {{api}}/users/{{id}}/status
 
 ###
-DELETE {{api}}/users/{id}
+PATCH {{api}}/users/{{id}}/password
+
+###
+DELETE {{api}}/users/{{id}}
