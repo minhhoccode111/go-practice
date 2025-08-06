@@ -29,7 +29,7 @@ type Service interface {
 	SelectUserById(id string) (*model.User, error)
 	SelectUserByEmail(email string) (*model.User, error)
 	InsertUser(user *model.User) error
-	UpdateUserEmail(id string, user *model.UserDTO) (*model.UserDTO, error)
+	UpdateUserEmail(id string, user *model.User) (*model.User, error)
 	DeleteUser(id string) error
 }
 
@@ -233,7 +233,7 @@ func (s *service) InsertUser(user *model.User) error {
 	return nil
 }
 
-func (s *service) UpdateUserEmail(id string, user *model.UserDTO) (*model.UserDTO, error) {
+func (s *service) UpdateUserEmail(id string, user *model.User) (*model.User, error) {
 	result := s.db.QueryRow(`
 		update users
 		set email = $1
@@ -243,11 +243,11 @@ func (s *service) UpdateUserEmail(id string, user *model.UserDTO) (*model.UserDT
 		user.Email,
 		id,
 	)
-	var userDTO model.UserDTO
-	if err := result.Scan(&userDTO.Id, &userDTO.Role, &userDTO.Email, &userDTO.IsActive); err != nil {
-
+	var updatedUser model.User
+	if err := result.Scan(&updatedUser.Id, &updatedUser.Role, &updatedUser.Email, &updatedUser.IsActive); err != nil {
+		return nil, err
 	}
-	return &model.UserDTO{}, nil
+	return &updatedUser, nil
 }
 
 func (s *service) DeleteUser(id string) error {

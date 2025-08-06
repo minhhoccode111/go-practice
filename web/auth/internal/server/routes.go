@@ -14,6 +14,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/mux"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type JSON map[string]any
@@ -215,7 +216,7 @@ func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	userExisted, err := s.db.SelectUserByEmail(userDTO.Email)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "email notfound"})
+			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "email not found"})
 			return
 		}
 		log.Printf("Error: %v", err)
@@ -272,6 +273,7 @@ func (s *Server) GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	isGetAll := allStr == "true"
 	offset := (pageNumber - 1) * limit
+	// TODO: implement concurrency with goroutines and channels instead of running one by one like this
 	users, err := s.db.SelectUsers(limit, offset, filter, isGetAll)
 	if err != nil {
 		log.Printf("error: %v", err)
@@ -297,12 +299,6 @@ func (s *Server) GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
-	// // TODO: actually implement
-	// WriteJSON(w, http.StatusOK, JSON{
-	// 	"userId":    r.Context().Value(ctxUserIdKey),
-	// 	"userEmail": r.Context().Value(ctxUserEmailKey),
-	// 	"userRole":  r.Context().Value(ctxUserRoleKey),
-	// })
 	var user model.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		log.Printf("Error decode request body: %v", err)
@@ -325,7 +321,7 @@ func (s *Server) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	existedUser, err := s.db.SelectUserById(userId)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "userId notfound"})
+			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "userid in token not found"})
 			return
 		}
 		log.Printf("Error: %v", err)
@@ -333,9 +329,26 @@ func (s *Server) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if existedUser.Email != userEmail {
-		// TODO:
+		WriteJSON(w, http.StatusUnauthorized, JSON{"error": "token is corrupted - id and email mismatch"})
+		return
+	}
+	if !*existedUser.IsActive {
+		WriteJSON(w, http.StatusNotFound, JSON{"error": "user is not active"})
+		return
 	}
 	updatedUser, err := s.db.UpdateUserEmail(userId, &user)
+	if err != nil {
+		if pgErr, ok := err.(*pgconn.PgError); ok {
+			if pgErr.Code == "23505" {
+				WriteJSON(w, http.StatusConflict, JSON{"error": "email already existed"})
+				return
+			}
+		}
+		WriteJSON(w, http.StatusInternalServerError, JSON{"error": "failed to update user profile"})
+		log.Printf("Error: %v", err)
+		return
+	}
+	WriteJSON(w, http.StatusOK, updatedUser.ToUserDTO())
 }
 func (s *Server) StatusUserHandler(w http.ResponseWriter, r *http.Request)   {}
 func (s *Server) PasswordUserHandler(w http.ResponseWriter, r *http.Request) {}
