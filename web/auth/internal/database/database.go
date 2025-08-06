@@ -30,6 +30,7 @@ type Service interface {
 	SelectUserByEmail(email string) (*model.User, error)
 	InsertUser(user *model.User) error
 	UpdateUserEmail(id string, user *model.User) (*model.User, error)
+	UpdateUserPassword(id string, user *model.User) error
 	DeleteUser(id string) error
 }
 
@@ -248,6 +249,25 @@ func (s *service) UpdateUserEmail(id string, user *model.User) (*model.User, err
 		return nil, err
 	}
 	return &updatedUser, nil
+}
+
+func (s *service) UpdateUserPassword(id string, user *model.User) error {
+	hashedPassword, err := user.HashedPassword()
+	if err != nil {
+		return fmt.Errorf("Error hashing password: %v", err)
+	}
+	_, err = s.db.Exec(`
+		update users
+		set password = $1
+		where id = $2
+		`,
+		hashedPassword,
+		id,
+	)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *service) DeleteUser(id string) error {

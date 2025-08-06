@@ -10,7 +10,7 @@ GET {{api}}/health
 POST {{api}}/auth/register
 
 {
-    "email": "asd2@gmail.com",
+    "email": "asd13@gmail.com",
     "password": "Bruh0!0!"
 }
 
@@ -18,7 +18,7 @@ POST {{api}}/auth/register
 POST {{api}}/auth/login
 
 {
-    "email": "asdlkj@gmail.com",
+    "email": "asd8@gmail.com",
     "password": "Bruh0!0!"
 }
 
@@ -30,12 +30,12 @@ GET {{api}}/users/all
     &all=true
 
 ###
-@id = e9c26eac-e339-4a97-b25b-dbfe19dc5e8c
+@id = 980294a8-96b8-44ad-9605-4adc04635d7e
 ###
 GET {{api}}/users/{{id}}
 
 ###
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTQ1NzIyNTUsImlhdCI6MTc1NDQ4NTg1NSwidXNlckVtYWlsIjoiYXNkbGtqQGdtYWlsLmNvbSIsInVzZXJJZCI6IjI4NjFmN2ZkLWQ5YjAtNDA0Mi04OTVkLWYwNjliYTdiNzYzNSIsInVzZXJSb2xlIjoidXNlciJ9.yevneQl7pedNVHLp_S9jXA3Xtw478eKGnr4rBUZvi9c
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTQ1ODI2MDcsImlhdCI6MTc1NDQ5NjIwNywidXNlckVtYWlsIjoiYXNkOEBnbWFpbC5jb20iLCJ1c2VySWQiOiI5ODAyOTRhOC05NmI4LTQ0YWQtOTYwNS00YWRjMDQ2MzVkN2UiLCJ1c2VyUm9sZSI6InVzZXIifQ.tQTj_PRPQL3Xz1Eg0io1nJ2fd6taUIC82rpM4ISmdbU
 ###
 PATCH {{api}}/users/{{id}}
 Authorization: Bearer {{token}}
@@ -49,6 +49,12 @@ PATCH {{api}}/users/{{id}}/status
 
 ###
 PATCH {{api}}/users/{{id}}/password
+Authorization: Bearer {{token}}
+
+{
+    "old_password": "Bruh0!0!",
+    "new_password": "Bruh0!0!"
+}
 
 ###
 DELETE {{api}}/users/{{id}}

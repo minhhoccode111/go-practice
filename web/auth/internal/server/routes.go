@@ -311,8 +311,6 @@ func (s *Server) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 		WriteJSON(w, http.StatusBadRequest, JSON{"error": err.Error()})
 		return
 	}
-	// no need to check for uniqueness, if error occurs, just return to client
-
 	// no need to check if type assertions are successful because we did that in
 	// authenticate middleware already
 	userId := r.Context().Value(ctxUserIdKey).(string)
@@ -350,6 +348,59 @@ func (s *Server) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	WriteJSON(w, http.StatusOK, updatedUser.ToUserDTO())
 }
-func (s *Server) StatusUserHandler(w http.ResponseWriter, r *http.Request)   {}
-func (s *Server) PasswordUserHandler(w http.ResponseWriter, r *http.Request) {}
-func (s *Server) DeleteUserHandler(w http.ResponseWriter, r *http.Request)   {}
+func (s *Server) StatusUserHandler(w http.ResponseWriter, r *http.Request) {}
+func (s *Server) PasswordUserHandler(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		OldPassword string `json:"old_password"`
+		NewPassword string `json:"new_password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		log.Printf("Error decode request body: %v", err)
+		WriteJSON(w, http.StatusBadRequest, JSON{"error": err.Error()})
+		return
+	}
+	if strings.TrimSpace(body.OldPassword) == "" {
+		WriteJSON(w, http.StatusBadRequest, JSON{"error": "old password cannot be empty"})
+		return
+	}
+	// tmpUser to User methods like HashPassword and ValidatePassword
+	tmpUser := model.User{Password: body.NewPassword}
+	if err := tmpUser.IsValidPassword(); err != nil {
+		log.Printf("Error: %v", err)
+		WriteJSON(w, http.StatusBadRequest, JSON{"error": err.Error()})
+		return
+	}
+	userId := r.Context().Value(ctxUserIdKey).(string)
+	userEmail := r.Context().Value(ctxUserEmailKey).(string)
+	existedUser, err := s.db.SelectUserById(userId)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "userid in token not found"})
+			return
+		}
+		log.Printf("Error: %v", err)
+		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
+		return
+	}
+	if existedUser.Email != userEmail {
+		WriteJSON(w, http.StatusUnauthorized, JSON{"error": "token is corrupted - id and email mismatch"})
+		return
+	}
+	if !*existedUser.IsActive {
+		WriteJSON(w, http.StatusNotFound, JSON{"error": "user is not active"})
+		return
+	}
+	if !existedUser.ValidatePassword(body.OldPassword) {
+		WriteJSON(w, http.StatusUnauthorized, JSON{"error": "old password is not correct"})
+		return
+	}
+	err = s.db.UpdateUserPassword(userId, &tmpUser)
+	if err != nil {
+		log.Printf("Error: %v", err)
+		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {}
