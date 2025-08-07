@@ -23,7 +23,7 @@ const (
 type User struct {
 	Id       string `json:"id"`
 	Email    string `json:"email"`
-	IsActive *bool  `json:"is_active"`
+	IsActive bool   `json:"is_active"`
 	Role     Role   `json:"role"`
 	Password string
 }
@@ -31,7 +31,7 @@ type User struct {
 type UserDTO struct {
 	Id       string `json:"id"`
 	Email    string `json:"email"`
-	IsActive *bool  `json:"is_active"`
+	IsActive bool   `json:"is_active"`
 	Role     Role   `json:"role"`
 }
 

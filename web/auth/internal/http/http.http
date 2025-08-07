@@ -10,7 +10,7 @@ GET {{api}}/health
 POST {{api}}/auth/register
 
 {
-    "email": "asd13@gmail.com",
+    "email": "asd14@gmail.com",
     "password": "Bruh0!0!"
 }
 
@@ -18,7 +18,7 @@ POST {{api}}/auth/register
 POST {{api}}/auth/login
 
 {
-    "email": "asd8@gmail.com",
+    "email": "asd14@gmail.com",
     "password": "Bruh0!0!"
 }
 
@@ -31,11 +31,15 @@ GET {{api}}/users/all
 
 ###
 @id = 980294a8-96b8-44ad-9605-4adc04635d7e
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTQ2NjE3ODEsImlhdCI6MTc1NDU3NTM4MSwidXNlckVtYWlsIjoiYXNkMTRAZ21haWwuY29tIiwidXNlcklkIjoiNTBkYTgyYWItMjgzOC00ZjRmLWE5OGMtZDJmMmRhYjU2YjQ5IiwidXNlclJvbGUiOiJ1c2VyIn0.V6lYNX7-1sHyLHYeaeDV85-5gvPYp9Iybg5czNUZu4M
 ###
 GET {{api}}/users/{{id}}
 
 ###
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTQ1ODI2MDcsImlhdCI6MTc1NDQ5NjIwNywidXNlckVtYWlsIjoiYXNkOEBnbWFpbC5jb20iLCJ1c2VySWQiOiI5ODAyOTRhOC05NmI4LTQ0YWQtOTYwNS00YWRjMDQ2MzVkN2UiLCJ1c2VyUm9sZSI6InVzZXIifQ.tQTj_PRPQL3Xz1Eg0io1nJ2fd6taUIC82rpM4ISmdbU
+GET {{api}}/auth/me
+Authorization: Bearer {{token}}
+
+###
 ###
 PATCH {{api}}/users/{{id}}
 Authorization: Bearer {{token}}
@@ -46,6 +50,10 @@ Authorization: Bearer {{token}}
 
 ###
 PATCH {{api}}/users/{{id}}/status
+
+{
+    "is_active": false
+}
 
 ###
 PATCH {{api}}/users/{{id}}/password

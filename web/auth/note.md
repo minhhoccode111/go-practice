@@ -67,6 +67,7 @@ Todo:
 - use context in middlewares and database query
 - refactor
 - remove password from select user by id and email
+- check for is_active everywhere
 
 ```go
 import (

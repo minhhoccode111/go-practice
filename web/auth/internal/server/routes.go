@@ -54,6 +54,9 @@ func (s *Server) RegisterRoutes() http.Handler {
 	r.HandleFunc("/users/{id}", s.GetUserHandler).Methods("GET")
 
 	// user-authenticated routes
+	me := r.PathPrefix("/auth").Subrouter()
+	me.Use(s.authMiddleware)
+	me.HandleFunc("/me", s.GetMeHandler).Methods("GET")
 	user := r.PathPrefix("/users").Subrouter()
 	user.Use(s.authMiddleware)
 	user.HandleFunc("/{id}", s.UpdateUserHandler).Methods("PATCH")
@@ -298,6 +301,30 @@ func (s *Server) GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (s *Server) GetMeHandler(w http.ResponseWriter, r *http.Request) {
+	userId := r.Context().Value(ctxUserIdKey).(string)
+	userEmail := r.Context().Value(ctxUserEmailKey).(string)
+	existedUser, err := s.db.SelectUserById(userId)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "userid in token not found"})
+			return
+		}
+		log.Printf("Error: %v", err)
+		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
+		return
+	}
+	if existedUser.Email != userEmail {
+		WriteJSON(w, http.StatusUnauthorized, JSON{"error": "token is corrupted - id and email mismatch"})
+		return
+	}
+	if !existedUser.IsActive {
+		WriteJSON(w, http.StatusNotFound, JSON{"error": "user is not active"})
+		return
+	}
+	WriteJSON(w, http.StatusOK, existedUser.ToUserDTO())
+}
+
 func (s *Server) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	var user model.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
@@ -330,7 +357,7 @@ func (s *Server) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 		WriteJSON(w, http.StatusUnauthorized, JSON{"error": "token is corrupted - id and email mismatch"})
 		return
 	}
-	if !*existedUser.IsActive {
+	if !existedUser.IsActive {
 		WriteJSON(w, http.StatusNotFound, JSON{"error": "user is not active"})
 		return
 	}
@@ -348,7 +375,11 @@ func (s *Server) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	WriteJSON(w, http.StatusOK, updatedUser.ToUserDTO())
 }
-func (s *Server) StatusUserHandler(w http.ResponseWriter, r *http.Request) {}
+
+func (s *Server) StatusUserHandler(w http.ResponseWriter, r *http.Request) {
+
+}
+
 func (s *Server) PasswordUserHandler(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		OldPassword string `json:"old_password"`
@@ -386,7 +417,7 @@ func (s *Server) PasswordUserHandler(w http.ResponseWriter, r *http.Request) {
 		WriteJSON(w, http.StatusUnauthorized, JSON{"error": "token is corrupted - id and email mismatch"})
 		return
 	}
-	if !*existedUser.IsActive {
+	if !existedUser.IsActive {
 		WriteJSON(w, http.StatusNotFound, JSON{"error": "user is not active"})
 		return
 	}
