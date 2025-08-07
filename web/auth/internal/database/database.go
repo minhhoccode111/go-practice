@@ -31,6 +31,7 @@ type Service interface {
 	InsertUser(user *model.User) error
 	UpdateUserEmail(id string, user *model.User) (*model.User, error)
 	UpdateUserPassword(id string, user *model.User) error
+	UpdateUserStatus(id string, isActive bool) error
 	DeleteUser(id string) error
 }
 
@@ -262,6 +263,21 @@ func (s *service) UpdateUserPassword(id string, user *model.User) error {
 		where id = $2
 		`,
 		hashedPassword,
+		id,
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *service) UpdateUserStatus(id string, isActive bool) error {
+	_, err := s.db.Exec(`
+		update users
+		set is_active = $1
+		where id = $2
+		`,
+		isActive,
 		id,
 	)
 	if err != nil {

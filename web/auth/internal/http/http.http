@@ -10,7 +10,7 @@ GET {{api}}/health
 POST {{api}}/auth/register
 
 {
-    "email": "asd14@gmail.com",
+    "email": "asd15@gmail.com",
     "password": "Bruh0!0!"
 }
 
@@ -18,20 +18,24 @@ POST {{api}}/auth/register
 POST {{api}}/auth/login
 
 {
-    "email": "asd14@gmail.com",
-    "password": "Bruh0!0!"
+    "email": "minhhoccode111@gmail.com",
+    "password": "asdasd"
 }
 
 ###
 GET {{api}}/users/all
     ?pageNumber=1
-    &perPage=10
-    &q=1
+    &perPage=5
+    &q=
     &all=true
 
-###
-@id = 980294a8-96b8-44ad-9605-4adc04635d7e
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTQ2NjE3ODEsImlhdCI6MTc1NDU3NTM4MSwidXNlckVtYWlsIjoiYXNkMTRAZ21haWwuY29tIiwidXNlcklkIjoiNTBkYTgyYWItMjgzOC00ZjRmLWE5OGMtZDJmMmRhYjU2YjQ5IiwidXNlclJvbGUiOiJ1c2VyIn0.V6lYNX7-1sHyLHYeaeDV85-5gvPYp9Iybg5czNUZu4M
+### admin
+@id = e9c26eac-e339-4a97-b25b-dbfe19dc5e8c
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTQ2Njg3MTcsImlhdCI6MTc1NDU4MjMxNywidXNlckVtYWlsIjoibWluaGhvY2NvZGUxMTFAZ21haWwuY29tIiwidXNlcklkIjoiZTljMjZlYWMtZTMzOS00YTk3LWIyNWItZGJmZTE5ZGM1ZThjIiwidXNlclJvbGUiOiJhZG1pbiJ9.6IoDLIO7OSJB35DkCcl6cdLLyUcbwr_jMrugvcZCmcc
+### asd14
+### @id = baff9414-0b2c-4631-a2ce-96323d35ccb8
+### @token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTQ2NjQ0OTUsImlhdCI6MTc1NDU3ODA5NSwidXNlckVtYWlsIjoiYXNkMTVAZ21haWwuY29tIiwidXNlcklkIjoiYmFmZjk0MTQtMGIyYy00NjMxLWEyY2UtOTYzMjNkMzVjY2I4IiwidXNlclJvbGUiOiJ1c2VyIn0.2HFqVEXcpIHubRmRgGSMFM6DeCVjD08qmGEJ-0Ru8EU
+
 ###
 GET {{api}}/users/{{id}}
 
@@ -45,14 +49,16 @@ PATCH {{api}}/users/{{id}}
 Authorization: Bearer {{token}}
 
 {
-    "email": "asd12@gmail.com"
+    "email": "asd15@gmail.com"
 }
 
 ###
 PATCH {{api}}/users/{{id}}/status
+Authorization: Bearer {{token}}
 
 {
-    "is_active": false
+    "id": "e9c26eac-e339-4a97-b25b-dbfe19dc5e8c",
+    "is_active": true
 }
 
 ###

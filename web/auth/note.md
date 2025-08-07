@@ -68,6 +68,7 @@ Todo:
 - refactor
 - remove password from select user by id and email
 - check for is_active everywhere
+- move some of User model helper functions to separate function
 
 ```go
 import (

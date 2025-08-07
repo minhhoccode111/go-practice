@@ -118,8 +118,8 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 			}
 			return []byte(model.JwtSecret), nil
 		})
-		log.Printf("%v\n", token)
-		log.Printf("%v\n", err)
+		// log.Printf("%v\n", token)
+		// log.Printf("%v\n", err)
 		if err != nil || !token.Valid {
 			WriteJSON(w, http.StatusUnauthorized, "invalid token")
 			return
@@ -148,6 +148,7 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), ctxUserIdKey, userId)
 		ctx = context.WithValue(ctx, ctxUserEmailKey, userEmail)
 		ctx = context.WithValue(ctx, ctxUserRoleKey, userRole)
+		// TODO: query database to check if user is active?
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -155,7 +156,11 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 // Authorization middleware
 func (s *Server) adminMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// get user from context, check role == admin
+		userRole := r.Context().Value(ctxUserRoleKey).(string)
+		if userRole != string(model.RoleAdmin) {
+			WriteJSON(w, http.StatusForbidden, JSON{"error": "user is not admin"})
+			return
+		}
 		next.ServeHTTP(w, r)
 	})
 }
@@ -209,7 +214,10 @@ func (s *Server) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
-	var userDTO model.User
+	var userDTO struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
 	if err := json.NewDecoder(r.Body).Decode(&userDTO); err != nil {
 		log.Printf("Error decode request body: %v", err)
 		WriteJSON(w, http.StatusBadRequest, JSON{"error": err.Error()})
@@ -377,7 +385,56 @@ func (s *Server) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) StatusUserHandler(w http.ResponseWriter, r *http.Request) {
-
+	var body struct {
+		Id       string `json:"id"`
+		IsActive bool   `json:"is_active"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		log.Printf("Error decode request body: %v", err)
+		WriteJSON(w, http.StatusBadRequest, JSON{"error": err.Error()})
+		return
+	}
+	userId := r.Context().Value(ctxUserIdKey).(string)
+	userEmail := r.Context().Value(ctxUserEmailKey).(string)
+	userRole := r.Context().Value(ctxUserRoleKey).(string)
+	existedUser, err := s.db.SelectUserById(body.Id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "user to be set status not found"})
+			return
+		}
+		log.Printf("Error: %v", err)
+		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
+		return
+	}
+	// admin can activate or deactivate any user
+	// user can only deactivate itself
+	if userRole != string(model.RoleAdmin) {
+		// activate
+		if body.IsActive {
+			WriteJSON(w, http.StatusForbidden, JSON{"error": "only admin can activate a user"})
+			return
+		}
+		// deactivate
+		if userId != existedUser.Id {
+			WriteJSON(w, http.StatusForbidden, JSON{"error": "only user can deactivate itself"})
+			return
+		}
+		// other edge case, when auth user is not admin, but the email in token
+		// don't match
+		if userEmail != existedUser.Email {
+			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "token is corrupted - id and email mismatch"})
+			return
+		}
+		// fine
+	}
+	err = s.db.UpdateUserStatus(body.Id, body.IsActive)
+	if err != nil {
+		log.Printf("Error: %v", err)
+		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *Server) PasswordUserHandler(w http.ResponseWriter, r *http.Request) {
