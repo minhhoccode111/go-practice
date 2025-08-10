@@ -22,9 +22,8 @@ type JSON map[string]any
 type ctxKey string
 
 const (
-	ctxUserIdKey    ctxKey = "userId"
-	ctxUserEmailKey ctxKey = "userEmail"
-	ctxUserRoleKey  ctxKey = "userRole"
+	ctxUserKey   ctxKey = "user"
+	ctxUserIdKey ctxKey = "userId"
 )
 
 func WriteText(w http.ResponseWriter, status int, data string) {
@@ -104,11 +103,11 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 		}
 		parts := strings.Fields(authHeader)
 		if !strings.EqualFold(parts[0], "Bearer") {
-			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "authorization must start with 'Bearer'"})
+			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "authorization header must start with 'Bearer'"})
 			return
 		}
 		if len(parts) != 2 {
-			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "authorization must be formatted as 'Bearer <token>'"})
+			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "authorization header must be formatted as 'Bearer <token>'"})
 			return
 		}
 		tokenStr := parts[1]
@@ -118,36 +117,32 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 			}
 			return []byte(utils.JwtSecret), nil
 		})
-		if err != nil || !token.Valid {
-			WriteJSON(w, http.StatusUnauthorized, "invalid token")
+		if err != nil {
+			log.Printf("Error parsing token: %v", err)
+			WriteJSON(w, http.StatusUnauthorized, JSON{"error": err.Error()})
 			return
 		}
 		claims, ok := token.Claims.(jwt.MapClaims)
-		if !ok {
-			WriteJSON(w, http.StatusUnauthorized, "invalid token claims")
+		if !ok || !token.Valid {
+			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "invalid token"})
 			return
 		}
-		userId, ok := claims["userId"].(string)
+		userId, ok := claims[string(ctxUserIdKey)].(string)
 		if !ok || userId == "" {
-			WriteJSON(w, http.StatusUnauthorized, "missing userId in token")
+			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "missing userId in token"})
 			return
 		}
-		userEmail, ok := claims["userEmail"].(string)
-		if !ok || userEmail == "" {
-			WriteJSON(w, http.StatusUnauthorized, "missing userEmail in token")
+		user, err := s.db.SelectUserById(userId)
+		if err != nil {
+			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "cannot authorize user in jwt"})
 			return
 		}
-		userRole, ok := claims["userRole"].(string)
-		if !ok || userRole == "" {
-			WriteJSON(w, http.StatusUnauthorized, "missing userRole in token")
+		if !user.IsActive {
+			WriteJSON(w, http.StatusForbidden, JSON{"error": "user in jwt is inactive"})
 			return
 		}
-		// inject into context
 		ctx := context.WithValue(r.Context(), ctxUserIdKey, userId)
-		ctx = context.WithValue(ctx, ctxUserEmailKey, userEmail)
-		ctx = context.WithValue(ctx, ctxUserRoleKey, userRole)
-		// TODO: query database to check if user is active? and attach to request
-		// and also check for token expiration
+		ctx = context.WithValue(ctx, ctxUserKey, *user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -155,8 +150,8 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 // Authorization middleware
 func (s *Server) adminMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userRole := r.Context().Value(ctxUserRoleKey).(string)
-		if userRole != string(model.RoleAdmin) {
+		user := r.Context().Value(ctxUserKey).(model.User)
+		if user.Role != model.RoleAdmin {
 			WriteJSON(w, http.StatusForbidden, JSON{"error": "user is not admin"})
 			return
 		}
@@ -250,6 +245,7 @@ func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	userDTO := utils.UserToUserDTO(userExisted)
 	token, err := utils.GenerateJWT(&userDTO)
 	if err != nil {
+		log.Printf("Error: %v", err)
 		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
 		return
 	}
@@ -258,7 +254,7 @@ func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 	paths := strings.Split(r.URL.Path, "/")
-	userId := paths[len(paths)-1]
+	userId := paths[len(paths)-1] // path/user/{userId}
 	existedUser, err := s.db.SelectUserById(userId)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -266,6 +262,7 @@ func (s *Server) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		log.Printf("Error: %v", err)
+		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
 		return
 	}
 	WriteJSON(w, http.StatusOK, utils.UserToUserDTO(existedUser))
@@ -314,27 +311,15 @@ func (s *Server) GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetMeHandler(w http.ResponseWriter, r *http.Request) {
-	userId := r.Context().Value(ctxUserIdKey).(string)
-	userEmail := r.Context().Value(ctxUserEmailKey).(string)
-	existedUser, err := s.db.SelectUserById(userId)
+	user := r.Context().Value(ctxUserKey).(model.User)
+	userDTO := utils.UserToUserDTO(&user)
+	token, err := utils.GenerateJWT(&userDTO)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "userId in token not found"})
-			return
-		}
 		log.Printf("Error: %v", err)
 		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
 		return
 	}
-	if existedUser.Email != userEmail {
-		WriteJSON(w, http.StatusUnauthorized, JSON{"error": "token is corrupted - id and email mismatch"})
-		return
-	}
-	if !existedUser.IsActive {
-		WriteJSON(w, http.StatusNotFound, JSON{"error": "user is not active"})
-		return
-	}
-	WriteJSON(w, http.StatusOK, utils.UserToUserDTO(existedUser))
+	WriteJSON(w, http.StatusOK, JSON{"token": token, "user": userDTO})
 }
 
 func (s *Server) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -353,10 +338,10 @@ func (s *Server) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	paths := strings.Split(r.URL.Path, "/")
-	userIdPath := paths[len(paths)-1]
+	userIdPath := paths[len(paths)-1] // path/user/{userId}
 	userIdToken := r.Context().Value(ctxUserIdKey).(string)
 	if userIdPath != userIdToken {
-		WriteJSON(w, http.StatusUnauthorized, JSON{"error": "userId in token and url mismatch"})
+		WriteJSON(w, http.StatusUnauthorized, JSON{"error": "userIdToken and userIdPath mismatch"})
 		return
 	}
 	updatedUserDTO, err := s.db.UpdateUser(userIdPath, email)
@@ -376,53 +361,42 @@ func (s *Server) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) StatusUserHandler(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		Id       string `json:"id"`
-		IsActive bool   `json:"is_active"`
+		// NOTE: pointer to differentiate between explicit-false and not-provided
+		IsActive *bool `json:"is_active"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		log.Printf("Error decode request body: %v", err)
 		WriteJSON(w, http.StatusBadRequest, JSON{"error": err.Error()})
 		return
 	}
+	if body.IsActive == nil {
+		WriteJSON(w, http.StatusBadRequest, JSON{"error": "is_active is required"})
+		return
+	}
 	paths := strings.Split(r.URL.Path, "/")
-	// TODO: continue here
-	userIdPath := paths[len(paths)-2]
+	userIdPath := paths[len(paths)-2] // path/users/{userId}/status
 	userIdToken := r.Context().Value(ctxUserIdKey).(string)
-	userEmail := r.Context().Value(ctxUserEmailKey).(string)
-	userRole := r.Context().Value(ctxUserRoleKey).(string)
-	existedUser, err := s.db.SelectUserById(body.Id)
+	userInToken := r.Context().Value(ctxUserKey).(model.User)
+	// admin can activate or deactivate any user, user can only deactivate itself
+	if userInToken.Role != model.RoleAdmin {
+		// activate
+		if *body.IsActive {
+			WriteJSON(w, http.StatusForbidden, JSON{"error": "only admin can activate a user"})
+			return
+		}
+		// deactivate
+		if userIdToken != userIdPath {
+			WriteJSON(w, http.StatusForbidden, JSON{"error": "you must be admin to deactivate other users than yourself"})
+			return
+		}
+		// fine to continue
+	}
+	err := s.db.UpdateUserStatus(userIdPath, *body.IsActive)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "user to be set status not found"})
 			return
 		}
-		log.Printf("Error: %v", err)
-		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
-		return
-	}
-	// admin can activate or deactivate any user
-	// user can only deactivate itself
-	if userRole != string(model.RoleAdmin) {
-		// activate
-		if body.IsActive {
-			WriteJSON(w, http.StatusForbidden, JSON{"error": "only admin can activate a user"})
-			return
-		}
-		// deactivate
-		if userIdToken != existedUser.Id {
-			WriteJSON(w, http.StatusForbidden, JSON{"error": "only user can deactivate itself"})
-			return
-		}
-		// other edge case, when auth user is not admin, but the email in token
-		// don't match
-		if userEmail != existedUser.Email {
-			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "token is corrupted - id and email mismatch"})
-			return
-		}
-		// fine
-	}
-	err = s.db.UpdateUserStatus(body.Id, body.IsActive)
-	if err != nil {
 		log.Printf("Error: %v", err)
 		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
 		return
@@ -446,33 +420,24 @@ func (s *Server) PasswordUserHandler(w http.ResponseWriter, r *http.Request) {
 		WriteJSON(w, http.StatusBadRequest, JSON{"error": err.Error()})
 		return
 	}
-	userId := r.Context().Value(ctxUserIdKey).(string)
-	userEmail := r.Context().Value(ctxUserEmailKey).(string)
-	// BUG: extract the userId in the URL and use that instead of using the one
-	existedUser, err := s.db.SelectUserById(userId)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "userId in token not found"})
-			return
-		}
-		log.Printf("Error: %v", err)
-		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
+	paths := strings.Split(r.URL.Path, "/")
+	userIdPath := paths[len(paths)-2] // path/users/{userId}/status
+	userIdToken := r.Context().Value(ctxUserIdKey).(string)
+	if userIdPath != userIdToken {
+		WriteJSON(w, http.StatusForbidden, JSON{"error": "cannot change another user's password"})
 		return
 	}
-	if existedUser.Email != userEmail {
-		WriteJSON(w, http.StatusUnauthorized, JSON{"error": "token is corrupted - id and email mismatch"})
-		return
-	}
-	if !existedUser.IsActive {
-		WriteJSON(w, http.StatusNotFound, JSON{"error": "user is not active"})
-		return
-	}
-	if !utils.ValidatePassword(existedUser.Password, body.OldPassword) {
+	userInToken := r.Context().Value(ctxUserKey).(model.User)
+	if !utils.ValidatePassword(userInToken.Password, body.OldPassword) {
 		WriteJSON(w, http.StatusUnauthorized, JSON{"error": "old password is not correct"})
 		return
 	}
-	err = s.db.UpdateUserPassword(userId, newPassword)
+	err = s.db.UpdateUserPassword(userIdPath, newPassword)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "user to be updated password not found"})
+			return
+		}
 		log.Printf("Error: %v", err)
 		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
 		return
@@ -482,7 +447,7 @@ func (s *Server) PasswordUserHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	paths := strings.Split(r.URL.Path, "/")
-	userIdPath := paths[len(paths)-1]
+	userIdPath := paths[len(paths)-1] // path/users/{userId}
 	userIdToken := r.Context().Value(ctxUserIdKey).(string)
 	if userIdPath == userIdToken {
 		WriteJSON(w, http.StatusForbidden, JSON{"error": "admin cannot self-delete"})

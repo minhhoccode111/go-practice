@@ -4,11 +4,9 @@ Concepts:
 
 - Router
 - Filter
-- Context
 - Interface
 - Middleware
 - Pagination
-- Concurrency
 - Soft-delete
 - Authorization
 - Authentication
@@ -17,36 +15,40 @@ Concepts:
 - Password hashing
 - Database migration
 - Input validation + sanitization
+- Context for database query and middleware
+- Concurrency for independent database query (get all users, count users)
 - Use pointer to differentiate between "no provided" and "explicitly false" in Go
 
 Features:
 
+- Basic authentication and authorization
+
 APIs:
 
-```rust
-# public
+```txt
+       # public
 POST   /auth/register
 POST   /auth/login
 GET    /users/all
-    - filter email, status
-    - pagination
-    - TODO: only admin can get all users including inactive
+       - filter email, status
+       - pagination
+       - TODO: only admin can get all users including inactive
 GET    /users/{id}
 
-# auth
+       # auth
 PATCH  /users/{id}
-    - user update their profile, like email, bio, etc.
+       - user update their profile, like email, bio, etc.
 PATCH  /users/{id}/password
-    - user update their password, must provide old password
+       - user update their password, must provide old password
 PATCH  /users/{id}/status
-    - user deactivate her account (soft-delete)
-    - only admin can activate an account
+       - user deactivate her account (soft-delete)
+       - only admin can activate an account
 
-# authz
+       # authz
 DELETE /users/{id}
-    - admin hard-delete an account
+       - admin hard-delete an account
 PATCH  /users/{id}/role
-    - admin make a user an admin
+       - admin make a user an admin
 ```
 
 Database:
@@ -62,14 +64,8 @@ idx - email     - unique
 
 Todo (small details):
 
-- use UserDTO to transfer data most of the time
+- use more context in middlewares and database query execution
 - use goroutines and channels to run queries concurrently (those not depend on each other)
-- use context in middlewares and database query execution
-- remove password from select user by id and email
-- check for is_active everywhere
-- move some of User model helper functions to separate function
-- validate token expire
-- why update status is being passed userid? it's already in the url
 
 ```go
 import (

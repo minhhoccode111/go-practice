@@ -1,11 +1,11 @@
 @api = http://localhost:8000
 
 ### admin
-@id_admin = e991d113-58dc-414c-879c-3dd474ab23cc
-@token_admin = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTQ4OTg1NDMsImlhdCI6MTc1NDgxMjE0MywidXNlckVtYWlsIjoibWluaGhvY2NvZGUxMTFAZ21haWwuY29tIiwidXNlcklkIjoiZTk5MWQxMTMtNThkYy00MTRjLTg3OWMtM2RkNDc0YWIyM2NjIiwidXNlclJvbGUiOiJhZG1pbiJ9.DcZH5olUzzX9yFSXxIpGI-Tm7WT5fFbqDQn89Jz1YXY
-### asd0
-@id_user = 530813bf-d772-4b03-bca2-cfe8dbe95f94
-@token_user = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTQ5MDc4MzYsImlhdCI6MTc1NDgyMTQzNiwidXNlckVtYWlsIjoiYXNkMUBnbWFpbC5jb20iLCJ1c2VySWQiOiI1MzA4MTNiZi1kNzcyLTRiMDMtYmNhMi1jZmU4ZGJlOTVmOTQiLCJ1c2VyUm9sZSI6InVzZXIifQ.cpgfXV1MG1I6XocsDyLcmWlf5vTmttkYULYEpogMWYo
+@id_admin = e9c26eac-e339-4a97-b25b-dbfe19dc5e8c
+@token_admin = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTQ5Mjg4MDAsImlhdCI6MTc1NDg0MjQwMCwidXNlcklkIjoiZTljMjZlYWMtZTMzOS00YTk3LWIyNWItZGJmZTE5ZGM1ZThjIn0.L2dCTXldaf9odqnkc6MRYfEbTc3EjCfSkTdu5emxptE
+### asd1
+@id_user = e08f8064-dc75-4f90-b9f8-0beff88b7bd3
+@token_user = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTQ5Mjg3MzUsImlhdCI6MTc1NDg0MjMzNSwidXNlcklkIjoiZTA4ZjgwNjQtZGM3NS00ZjkwLWI5ZjgtMGJlZmY4OGI3YmQzIn0.dO3JjluvcUHnoZfX3dy2B9m_6v9IQYMOn-7TcleNMig
 
 ###
 GET {{api}}
@@ -17,7 +17,7 @@ GET {{api}}/healthz
 POST {{api}}/auth/register
 
 {
-    "email": "asd1@gmail.com",
+    "email": "asd17@gmail.com",
     "password": "Bruh0!0!"
 }
 
@@ -25,14 +25,14 @@ POST {{api}}/auth/register
 POST {{api}}/auth/login
 
 {
-    "email": "asd1@gmail.com",
+    "email": "minhhoccode111@gmail.com",
     "password": "Bruh0!0!"
 }
 
 ###
 GET {{api}}/users/all
     ?pageNumber=1
-    &perPage=10
+    &perPage=20
     &q=
     &all=true
 
@@ -57,7 +57,6 @@ PATCH {{api}}/users/{{id_user}}/status
 Authorization: Bearer {{token_admin}}
 
 {
-    "id": "{{id_user}}",
     "is_active": true
 }
 

@@ -28,11 +28,9 @@ func UserToUserDTO(user *model.User) model.UserDTO {
 func GenerateJWT(user *model.UserDTO) (string, error) {
 	secretKey := []byte(JwtSecret)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"userId":    user.Id,
-		"userEmail": user.Email,
-		"userRole":  user.Role,
-		"exp":       time.Now().Add(time.Hour * 24).Unix(),
-		"iat":       time.Now().Unix(),
+		"userId": user.Id,
+		"exp":    time.Now().Add(time.Hour * 24).Unix(),
+		"iat":    time.Now().Unix(),
 	})
 	tokenString, err := token.SignedString(secretKey)
 	if err != nil {
