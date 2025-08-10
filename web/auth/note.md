@@ -60,15 +60,16 @@ idx - email     - unique
     - is_active
 ```
 
-Todo:
+Todo (small details):
 
 - use UserDTO to transfer data most of the time
-- use goroutines and channels to run queries concurrently
+- use goroutines and channels to run queries concurrently (those not depend on each other)
 - use context in middlewares and database query
-- refactor
 - remove password from select user by id and email
 - check for is_active everywhere
 - move some of User model helper functions to separate function
+- validate token expire
+- why update status is being passed userid? it's already in the url
 
 ```go
 import (

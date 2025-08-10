@@ -1,7 +1,14 @@
 @api = http://localhost:8000
 
+### admin
+@id_admin = e991d113-58dc-414c-879c-3dd474ab23cc
+@token_admin = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTQ4OTg1NDMsImlhdCI6MTc1NDgxMjE0MywidXNlckVtYWlsIjoibWluaGhvY2NvZGUxMTFAZ21haWwuY29tIiwidXNlcklkIjoiZTk5MWQxMTMtNThkYy00MTRjLTg3OWMtM2RkNDc0YWIyM2NjIiwidXNlclJvbGUiOiJhZG1pbiJ9.DcZH5olUzzX9yFSXxIpGI-Tm7WT5fFbqDQn89Jz1YXY
+### asd0
+@id_user = 7dcb1cc3-67cb-4f65-b547-92c9bb8755da
+@token_user = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTQ4OTk4NjYsImlhdCI6MTc1NDgxMzQ2NiwidXNlckVtYWlsIjoiYXNkMUBnbWFpbC5jb20iLCJ1c2VySWQiOiIxMjJiYzU0OS0yNDFkLTQ1YWYtODBkNC0xNmU0N2VkZWU2YjAiLCJ1c2VyUm9sZSI6InVzZXIifQ.0tMTU-vb9jDcxeXhCdFpId2LdC-7Pqg5amcUy8-Gme4
+
 ###
-GET {{api}}/
+GET {{api}}
 
 ###
 GET {{api}}/health
@@ -10,7 +17,7 @@ GET {{api}}/health
 POST {{api}}/auth/register
 
 {
-    "email": "asd15@gmail.com",
+    "email": "asd1@gmail.com",
     "password": "Bruh0!0!"
 }
 
@@ -18,52 +25,45 @@ POST {{api}}/auth/register
 POST {{api}}/auth/login
 
 {
-    "email": "minhhoccode111@gmail.com",
-    "password": "asdasd"
+    "email": "asd1@gmail.com",
+    "password": "Bruh0!0!"
 }
 
 ###
 GET {{api}}/users/all
     ?pageNumber=1
-    &perPage=5
+    &perPage=10
     &q=
     &all=true
 
-### admin
-@id = e9c26eac-e339-4a97-b25b-dbfe19dc5e8c
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTQ2Njg3MTcsImlhdCI6MTc1NDU4MjMxNywidXNlckVtYWlsIjoibWluaGhvY2NvZGUxMTFAZ21haWwuY29tIiwidXNlcklkIjoiZTljMjZlYWMtZTMzOS00YTk3LWIyNWItZGJmZTE5ZGM1ZThjIiwidXNlclJvbGUiOiJhZG1pbiJ9.6IoDLIO7OSJB35DkCcl6cdLLyUcbwr_jMrugvcZCmcc
-### asd14
-### @id = baff9414-0b2c-4631-a2ce-96323d35ccb8
-### @token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTQ2NjQ0OTUsImlhdCI6MTc1NDU3ODA5NSwidXNlckVtYWlsIjoiYXNkMTVAZ21haWwuY29tIiwidXNlcklkIjoiYmFmZjk0MTQtMGIyYy00NjMxLWEyY2UtOTYzMjNkMzVjY2I4IiwidXNlclJvbGUiOiJ1c2VyIn0.2HFqVEXcpIHubRmRgGSMFM6DeCVjD08qmGEJ-0Ru8EU
-
-###
-GET {{api}}/users/{{id}}
-
 ###
 GET {{api}}/auth/me
-Authorization: Bearer {{token}}
+Authorization: Bearer {{token_user}}
 
 ###
+GET {{api}}/users/{{id_user}}
+
 ###
-PATCH {{api}}/users/{{id}}
-Authorization: Bearer {{token}}
+PATCH {{api}}/users/{{id_user}}
+Authorization: Bearer {{token_user}}
 
 {
-    "email": "asd15@gmail.com"
+    "email": "asd1@gmail.com",
+    "bio": "dummy"
 }
 
 ###
-PATCH {{api}}/users/{{id}}/status
-Authorization: Bearer {{token}}
+PATCH {{api}}/users/{{id_user}}/status
+Authorization: Bearer {{token_admin}}
 
 {
-    "id": "e9c26eac-e339-4a97-b25b-dbfe19dc5e8c",
+    "id": "{{id_user}}",
     "is_active": true
 }
 
 ###
-PATCH {{api}}/users/{{id}}/password
-Authorization: Bearer {{token}}
+PATCH {{api}}/users/{{id_user}}/password
+Authorization: Bearer {{token_user}}
 
 {
     "old_password": "Bruh0!0!",
@@ -71,4 +71,5 @@ Authorization: Bearer {{token}}
 }
 
 ###
-DELETE {{api}}/users/{{id}}
+DELETE {{api}}/users/{{id_user}}
+Authorization: Bearer {{token_admin}}

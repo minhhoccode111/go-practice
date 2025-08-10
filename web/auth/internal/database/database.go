@@ -32,7 +32,7 @@ type Service interface {
 	UpdateUserEmail(id string, user *model.User) (*model.User, error)
 	UpdateUserPassword(id string, user *model.User) error
 	UpdateUserStatus(id string, isActive bool) error
-	DeleteUser(id string) error
+	DeleteUserById(id string) error
 }
 
 type service struct {
@@ -257,7 +257,7 @@ func (s *service) UpdateUserPassword(id string, user *model.User) error {
 	if err != nil {
 		return fmt.Errorf("Error hashing password: %v", err)
 	}
-	_, err = s.db.Exec(`
+	result, err := s.db.Exec(`
 		update users
 		set password = $1
 		where id = $2
@@ -266,13 +266,20 @@ func (s *service) UpdateUserPassword(id string, user *model.User) error {
 		id,
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("database error: %v", err)
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %v", err)
+	}
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
 	}
 	return nil
 }
 
 func (s *service) UpdateUserStatus(id string, isActive bool) error {
-	_, err := s.db.Exec(`
+	result, err := s.db.Exec(`
 		update users
 		set is_active = $1
 		where id = $2
@@ -281,11 +288,34 @@ func (s *service) UpdateUserStatus(id string, isActive bool) error {
 		id,
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("database error: %v", err)
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %v", err)
+	}
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
 	}
 	return nil
 }
 
-func (s *service) DeleteUser(id string) error {
-	panic("unimplemented")
+func (s *service) DeleteUserById(id string) error {
+	result, err := s.db.Exec(`
+		delete from users
+		where id = $1
+		`,
+		id,
+	)
+	if err != nil {
+		return fmt.Errorf("database error: %v", err)
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %v", err)
+	}
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }

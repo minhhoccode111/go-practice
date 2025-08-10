@@ -61,8 +61,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	user.Use(s.authMiddleware)
 	user.HandleFunc("/{id}", s.UpdateUserHandler).Methods("PATCH")
 	user.HandleFunc("/{id}/password", s.PasswordUserHandler).Methods("PATCH")
-	// user can deactivate their account
-	// but only admin can activate an account
+	// WARN: user can deactivate their account but only admin can activate an account
 	user.HandleFunc("/{id}/status", s.StatusUserHandler).Methods("PATCH")
 
 	// admin-authorized routes
@@ -252,16 +251,14 @@ func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 	paths := strings.Split(r.URL.Path, "/")
-	userid := paths[len(paths)-1]
-	user, err := s.db.SelectUserById(userid)
+	userId := paths[len(paths)-1]
+	user, err := s.db.SelectUserById(userId)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			WriteJSON(w, http.StatusNotFound, JSON{
-				"error": "user not found",
-			})
-		} else {
-			log.Printf("Error: %v", err)
+			WriteJSON(w, http.StatusNotFound, JSON{"error": "user not found"})
+			return
 		}
+		log.Printf("Error: %v", err)
 		return
 	}
 	WriteJSON(w, http.StatusOK, user.ToUserDTO())
@@ -315,7 +312,7 @@ func (s *Server) GetMeHandler(w http.ResponseWriter, r *http.Request) {
 	existedUser, err := s.db.SelectUserById(userId)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "userid in token not found"})
+			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "userId in token not found"})
 			return
 		}
 		log.Printf("Error: %v", err)
@@ -334,6 +331,8 @@ func (s *Server) GetMeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
+	// BUG: extract the userId in the URL and use that instead of using the one
+	// in token
 	var user model.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		log.Printf("Error decode request body: %v", err)
@@ -354,7 +353,7 @@ func (s *Server) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	existedUser, err := s.db.SelectUserById(userId)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "userid in token not found"})
+			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "userId in token not found"})
 			return
 		}
 		log.Printf("Error: %v", err)
@@ -463,7 +462,7 @@ func (s *Server) PasswordUserHandler(w http.ResponseWriter, r *http.Request) {
 	existedUser, err := s.db.SelectUserById(userId)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "userid in token not found"})
+			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "userId in token not found"})
 			return
 		}
 		log.Printf("Error: %v", err)
@@ -491,4 +490,23 @@ func (s *Server) PasswordUserHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (s *Server) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {}
+func (s *Server) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
+	paths := strings.Split(r.URL.Path, "/")
+	userIdPath := paths[len(paths)-1]
+	userIdToken := r.Context().Value(ctxUserIdKey).(string)
+	if userIdPath == userIdToken {
+		WriteJSON(w, http.StatusForbidden, JSON{"error": "admin cannot self-delete"})
+		return
+	}
+	err := s.db.DeleteUserById(userIdPath)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			WriteJSON(w, http.StatusNotFound, JSON{"error": "user to be deleted not found"})
+			return
+		}
+		log.Printf("Error: %v", err)
+		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
