@@ -2,6 +2,7 @@ package database
 
 import (
 	"auth/internal/model"
+	"auth/internal/utils"
 	"context"
 	"database/sql"
 	"fmt"
@@ -24,14 +25,32 @@ type Service interface {
 	// It returns an error if the connection cannot be closed.
 	Close() error
 
+	// CountUsers returns the number of users in the database for pagination.
 	CountUsers(filter string, isGetAll bool) (int, error)
+
+	// SelectUsers returns a slice of users from the database for pagination.
 	SelectUsers(limit, offset int, filter string, isGetAll bool) ([]*model.UserDTO, error)
+
+	// NOTE: GetUserById and GetUserByEmail have to return User model because sometimes we need password to update user
+
+	// SelectUserById returns a user from the database by its ID.
 	SelectUserById(id string) (*model.User, error)
+	// SelectUserByEmail returns a user from the database by its email.
 	SelectUserByEmail(email string) (*model.User, error)
+
+	// InsertUser inserts a new user into the database.
 	InsertUser(user *model.User) error
-	UpdateUserEmail(id string, user *model.User) (*model.User, error)
-	UpdateUserPassword(id string, user *model.User) error
+
+	// UpdateUser updates the email of a user in the database.
+	UpdateUser(id string, email string) (*model.UserDTO, error)
+
+	// UpdateUserPassword updates the password of a user in the database.
+	UpdateUserPassword(id string, password string) error
+
+	// UpdateUserStatus updates the status of a user in the database.
 	UpdateUserStatus(id string, isActive bool) error
+
+	// DeleteUserById deletes a user from the database by its ID.
 	DeleteUserById(id string) error
 }
 
@@ -146,7 +165,7 @@ func (s *service) CountUsers(filter string, isGetAll bool) (int, error) {
 	}
 	if err != nil {
 		log.Printf("Database error: %v", err)
-		return 0, err
+		return 0, fmt.Errorf("Datebase error when count users: %v", err)
 	}
 	return count, nil
 }
@@ -169,7 +188,8 @@ func (s *service) SelectUsers(limit int, offset int, filter string, isGetAll boo
 		`, filter, limit, offset)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("Error SelectUsers: %v", err)
+		log.Printf("Error select users: %v", err)
+		return nil, fmt.Errorf("Error select users: %v", err)
 	}
 	defer rows.Close()
 	var users = []*model.UserDTO{}
@@ -191,7 +211,9 @@ func (s *service) SelectUserById(id string) (*model.User, error) {
 		select id, email, is_active, role, password
 		from users
 		where id = $1
-		`, id).
+		`,
+		id,
+	).
 		Scan(&user.Id, &user.Email, &user.IsActive, &user.Role, &user.Password)
 	if err != nil {
 		return nil, err
@@ -214,47 +236,50 @@ func (s *service) SelectUserByEmail(email string) (*model.User, error) {
 }
 
 func (s *service) InsertUser(user *model.User) error {
-	hashedPassword, err := user.HashedPassword()
+	hashedPassword, err := utils.HashedPassword(user.Password)
 	if err != nil {
-		return fmt.Errorf("Error hashing password: %v", err)
+		log.Printf("Error hashing %v: %v", user.Password, err)
+		return fmt.Errorf("Error hashing %v: %v", user.Password, err)
 	}
-	result := s.db.QueryRow(`
+	row := s.db.QueryRow(`
 		insert into users(email, is_active, role, password)
 		values($1, $2, $3, $4)
-		returning id
+		returning id, role, password
 		`,
 		user.Email,
 		true,
 		model.RoleUser,
 		hashedPassword,
 	)
-	user.Role = model.RoleUser
-	if err := result.Scan(&user.Id); err != nil {
-		return err
+	if err := row.Scan(&user.Id, &user.Role, &user.Password); err != nil {
+		log.Printf("Error insert user: %v", err)
+		return fmt.Errorf("Error insert user: %v", err)
 	}
 	return nil
 }
 
-func (s *service) UpdateUserEmail(id string, user *model.User) (*model.User, error) {
+func (s *service) UpdateUser(id string, email string) (*model.UserDTO, error) {
 	result := s.db.QueryRow(`
 		update users
 		set email = $1
 		where id = $2
 		returning id, role, email, is_active
 		`,
-		user.Email,
+		email,
 		id,
 	)
-	var updatedUser model.User
+	var updatedUser model.UserDTO
 	if err := result.Scan(&updatedUser.Id, &updatedUser.Role, &updatedUser.Email, &updatedUser.IsActive); err != nil {
-		return nil, err
+		log.Printf("Error update user: %v", err)
+		return nil, fmt.Errorf("Error update user: %v", err)
 	}
 	return &updatedUser, nil
 }
 
-func (s *service) UpdateUserPassword(id string, user *model.User) error {
-	hashedPassword, err := user.HashedPassword()
+func (s *service) UpdateUserPassword(id string, password string) error {
+	hashedPassword, err := utils.HashedPassword(password)
 	if err != nil {
+		log.Printf("Error hashing password: %v", err)
 		return fmt.Errorf("Error hashing password: %v", err)
 	}
 	result, err := s.db.Exec(`
@@ -266,13 +291,16 @@ func (s *service) UpdateUserPassword(id string, user *model.User) error {
 		id,
 	)
 	if err != nil {
-		return fmt.Errorf("database error: %v", err)
+		log.Printf("database error when update user password: %v", err)
+		return fmt.Errorf("database error when update user password: %v", err)
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
+		log.Printf("failed to get rows affected: %v", err)
 		return fmt.Errorf("failed to get rows affected: %v", err)
 	}
 	if rowsAffected == 0 {
+		log.Printf("error when update user password: %v", sql.ErrNoRows)
 		return sql.ErrNoRows
 	}
 	return nil
@@ -288,13 +316,16 @@ func (s *service) UpdateUserStatus(id string, isActive bool) error {
 		id,
 	)
 	if err != nil {
-		return fmt.Errorf("database error: %v", err)
+		log.Printf("database error update user status: %v", err)
+		return fmt.Errorf("database error update user status: %v", err)
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
+		log.Printf("failed to get rows affected: %v", err)
 		return fmt.Errorf("failed to get rows affected: %v", err)
 	}
 	if rowsAffected == 0 {
+		log.Printf("error when update user password: %v", sql.ErrNoRows)
 		return sql.ErrNoRows
 	}
 	return nil
@@ -308,13 +339,16 @@ func (s *service) DeleteUserById(id string) error {
 		id,
 	)
 	if err != nil {
-		return fmt.Errorf("database error: %v", err)
+		log.Printf("database error delete user by id: %v", err)
+		return fmt.Errorf("database error delete user by id: %v", err)
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
+		log.Printf("failed to get rows affected: %v", err)
 		return fmt.Errorf("failed to get rows affected: %v", err)
 	}
 	if rowsAffected == 0 {
+		log.Printf("error when delete user: %v", sql.ErrNoRows)
 		return sql.ErrNoRows
 	}
 	return nil

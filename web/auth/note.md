@@ -64,7 +64,7 @@ Todo (small details):
 
 - use UserDTO to transfer data most of the time
 - use goroutines and channels to run queries concurrently (those not depend on each other)
-- use context in middlewares and database query
+- use context in middlewares and database query execution
 - remove password from select user by id and email
 - check for is_active everywhere
 - move some of User model helper functions to separate function

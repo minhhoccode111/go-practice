@@ -4,14 +4,14 @@
 @id_admin = e991d113-58dc-414c-879c-3dd474ab23cc
 @token_admin = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTQ4OTg1NDMsImlhdCI6MTc1NDgxMjE0MywidXNlckVtYWlsIjoibWluaGhvY2NvZGUxMTFAZ21haWwuY29tIiwidXNlcklkIjoiZTk5MWQxMTMtNThkYy00MTRjLTg3OWMtM2RkNDc0YWIyM2NjIiwidXNlclJvbGUiOiJhZG1pbiJ9.DcZH5olUzzX9yFSXxIpGI-Tm7WT5fFbqDQn89Jz1YXY
 ### asd0
-@id_user = 7dcb1cc3-67cb-4f65-b547-92c9bb8755da
-@token_user = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTQ4OTk4NjYsImlhdCI6MTc1NDgxMzQ2NiwidXNlckVtYWlsIjoiYXNkMUBnbWFpbC5jb20iLCJ1c2VySWQiOiIxMjJiYzU0OS0yNDFkLTQ1YWYtODBkNC0xNmU0N2VkZWU2YjAiLCJ1c2VyUm9sZSI6InVzZXIifQ.0tMTU-vb9jDcxeXhCdFpId2LdC-7Pqg5amcUy8-Gme4
+@id_user = 530813bf-d772-4b03-bca2-cfe8dbe95f94
+@token_user = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTQ5MDc4MzYsImlhdCI6MTc1NDgyMTQzNiwidXNlckVtYWlsIjoiYXNkMUBnbWFpbC5jb20iLCJ1c2VySWQiOiI1MzA4MTNiZi1kNzcyLTRiMDMtYmNhMi1jZmU4ZGJlOTVmOTQiLCJ1c2VyUm9sZSI6InVzZXIifQ.cpgfXV1MG1I6XocsDyLcmWlf5vTmttkYULYEpogMWYo
 
 ###
 GET {{api}}
 
 ###
-GET {{api}}/health
+GET {{api}}/healthz
 
 ###
 POST {{api}}/auth/register
