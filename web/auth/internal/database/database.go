@@ -244,14 +244,15 @@ func (s *service) InsertUser(user *model.User) error {
 	row := s.db.QueryRow(`
 		insert into users(email, is_active, role, password)
 		values($1, $2, $3, $4)
-		returning id, role, password
+		returning id
 		`,
 		user.Email,
-		true,
-		model.RoleUser,
+		user.IsActive,
+		user.Role,
 		hashedPassword,
 	)
-	if err := row.Scan(&user.Id, &user.Role, &user.Password); err != nil {
+	// pass generated id back to user
+	if err := row.Scan(&user.Id); err != nil {
 		log.Printf("Error insert user: %v", err)
 		return fmt.Errorf("Error insert user: %v", err)
 	}

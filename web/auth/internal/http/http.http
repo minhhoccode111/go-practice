@@ -17,7 +17,7 @@ GET {{api}}/healthz
 POST {{api}}/auth/register
 
 {
-    "email": "asd17@gmail.com",
+    "email": "asd2@gmail.com",
     "password": "Bruh0!0!"
 }
 

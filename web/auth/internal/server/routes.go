@@ -202,6 +202,8 @@ func (s *Server) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	user := model.User{
 		Email:    email,
 		Password: password,
+		IsActive: true,
+		Role:     model.RoleUser,
 	}
 	err = s.db.InsertUser(&user)
 	if err != nil {
