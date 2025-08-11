@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 
 	"auth/internal/model"
 	"auth/internal/utils"
@@ -287,29 +288,53 @@ func (s *Server) GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	isGetAll := allStr == "true"
 	offset := (pageNumber - 1) * limit
-	// TODO: implement concurrency with goroutines and channels instead of running one by one like this
-	users, err := s.db.SelectUsers(limit, offset, filter, isGetAll)
-	if err != nil {
-		log.Printf("error: %v", err)
-		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
-		return
-	}
-	countUsers, err := s.db.CountUsers(filter, isGetAll)
-	if err != nil {
-		log.Printf("error: %v", err)
-		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
-		return
-	}
+
 	divideAndRoundUp := func(a, b int) int {
 		return (a + b - 1) / b // e.g. 10 / 3 = (10 + 3 - 1) / 3 = 4
 	}
 
-	WriteJSON(w, http.StatusOK, JSON{
-		"users":      users,
-		"totalPage":  divideAndRoundUp(countUsers, limit),
-		"perPage":    limit,
-		"pageNumber": pageNumber,
-	})
+	usersCh := make(chan []*model.UserDTO)
+	countCh := make(chan int)
+	errCh := make(chan error, 2)
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		users, err := s.db.SelectUsers(limit, offset, filter, isGetAll)
+		if err != nil {
+			errCh <- err
+			return
+		}
+		usersCh <- users
+	}()
+	go func() {
+		defer wg.Done()
+		countUsers, err := s.db.CountUsers(filter, isGetAll)
+		if err != nil {
+			errCh <- err
+			return
+		}
+		countCh <- countUsers
+	}()
+	wg.Wait()
+	close(usersCh)
+	close(countCh)
+	close(errCh)
+	select {
+	case err := <-errCh:
+		log.Printf("error: %v", err)
+		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
+		return
+	default:
+		WriteJSON(w, http.StatusOK, JSON{
+			"users":      <-usersCh,
+			"totalPage":  divideAndRoundUp(<-countCh, limit),
+			"perPage":    limit,
+			"pageNumber": pageNumber,
+		})
+	}
 }
 
 func (s *Server) GetMeHandler(w http.ResponseWriter, r *http.Request) {
