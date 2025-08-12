@@ -1,11 +1,11 @@
 @api = http://localhost:8000
 
 ### admin
-@id_admin = e9c26eac-e339-4a97-b25b-dbfe19dc5e8c
-@token_admin = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTQ5OTk1MzAsImlhdCI6MTc1NDkxMzEzMCwidXNlcklkIjoiZTk5MWQxMTMtNThkYy00MTRjLTg3OWMtM2RkNDc0YWIyM2NjIn0.z75LRsCdSijna2ijjpB1RyuCWFkkiqzP4dZmIK-ktgc
+@id_admin = e991d113-58dc-414c-879c-3dd474ab23cc
+@token_admin = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTUwOTExNTcsImlhdCI6MTc1NTAwNDc1NywidXNlcklkIjoiZTk5MWQxMTMtNThkYy00MTRjLTg3OWMtM2RkNDc0YWIyM2NjIn0.5IExnf-Yh0fBuYjqWfmIrTQlNPq4MjcwQqzG7R0q3t8
 ### asd1
-@id_user = e08f8064-dc75-4f90-b9f8-0beff88b7bd3
-@token_user = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTQ5Mjg3MzUsImlhdCI6MTc1NDg0MjMzNSwidXNlcklkIjoiZTA4ZjgwNjQtZGM3NS00ZjkwLWI5ZjgtMGJlZmY4OGI3YmQzIn0.dO3JjluvcUHnoZfX3dy2B9m_6v9IQYMOn-7TcleNMig
+@id_user = 15c1d2c1-6f5a-4a00-a58f-8a2c4e7eaa4d
+@token_user = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTUwOTA3NTksImlhdCI6MTc1NTAwNDM1OSwidXNlcklkIjoiMTVjMWQyYzEtNmY1YS00YTAwLWE1OGYtOGEyYzRlN2VhYTRkIn0.Xry8V-dzu_RLsHV6oQM1qiYEr5w2AiKSN_j7Ew5hppU
 
 ###
 GET {{api}}
@@ -17,7 +17,7 @@ GET {{api}}/healthz
 POST {{api}}/auth/register
 
 {
-    "email": "asd2@gmail.com",
+    "email": "asd3@gmail.com",
     "password": "Bruh0!0!"
 }
 
@@ -32,7 +32,7 @@ POST {{api}}/auth/login
 ###
 GET {{api}}/users/all
     ?pageNumber=1
-    &perPage=20
+    &perPage=10
     &q=
     &all=true
 
@@ -48,7 +48,7 @@ PATCH {{api}}/users/{{id_user}}
 Authorization: Bearer {{token_user}}
 
 {
-    "email": "asd1@gmail.com",
+    "email": "asd3@gmail.com",
     "bio": "dummy"
 }
 

@@ -296,12 +296,15 @@ func (s *Server) GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 	usersCh := make(chan []*model.UserDTO)
 	countCh := make(chan int)
 	errCh := make(chan error, 2)
+	defer close(errCh)
 
 	var wg sync.WaitGroup
 	wg.Add(2)
+	defer wg.Wait()
 
 	go func() {
 		defer wg.Done()
+		defer close(usersCh)
 		users, err := s.db.SelectUsers(limit, offset, filter, isGetAll)
 		if err != nil {
 			errCh <- err
@@ -309,8 +312,10 @@ func (s *Server) GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		usersCh <- users
 	}()
+
 	go func() {
 		defer wg.Done()
+		defer close(countCh)
 		countUsers, err := s.db.CountUsers(filter, isGetAll)
 		if err != nil {
 			errCh <- err
@@ -318,23 +323,26 @@ func (s *Server) GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		countCh <- countUsers
 	}()
-	wg.Wait()
-	close(usersCh)
-	close(countCh)
-	close(errCh)
+
+	var users []*model.UserDTO
+	var count int
+
 	select {
 	case err := <-errCh:
-		log.Printf("error: %v", err)
+		log.Printf("Error when get all users: %v", err)
 		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
 		return
 	default:
-		WriteJSON(w, http.StatusOK, JSON{
-			"users":      <-usersCh,
-			"totalPage":  divideAndRoundUp(<-countCh, limit),
-			"perPage":    limit,
-			"pageNumber": pageNumber,
-		})
+		users = <-usersCh
+		count = <-countCh
 	}
+
+	WriteJSON(w, http.StatusOK, JSON{
+		"users":      users,
+		"totalPage":  divideAndRoundUp(count, limit),
+		"perPage":    limit,
+		"pageNumber": pageNumber,
+	})
 }
 
 func (s *Server) GetMeHandler(w http.ResponseWriter, r *http.Request) {
@@ -379,7 +387,7 @@ func (s *Server) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		WriteJSON(w, http.StatusInternalServerError, JSON{"error": "failed to update user profile"})
+		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
 		log.Printf("Error: %v", err)
 		return
 	}

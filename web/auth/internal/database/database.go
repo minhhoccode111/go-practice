@@ -272,7 +272,7 @@ func (s *service) UpdateUser(id string, email string) (*model.UserDTO, error) {
 	var updatedUser model.UserDTO
 	if err := result.Scan(&updatedUser.Id, &updatedUser.Role, &updatedUser.Email, &updatedUser.IsActive); err != nil {
 		log.Printf("Error update user: %v", err)
-		return nil, fmt.Errorf("Error update user: %v", err)
+		return nil, err
 	}
 	return &updatedUser, nil
 }
