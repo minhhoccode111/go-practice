@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"auth/internal/model"
 	"auth/internal/utils"
@@ -42,6 +43,8 @@ func WriteJSON(w http.ResponseWriter, status int, data any) {
 func (s *Server) RegisterRoutes() http.Handler {
 	r := mux.NewRouter()
 
+	// Apply timeout middleware
+	r.Use(s.timeoutMiddleware)
 	// Apply CORS middleware
 	r.Use(s.corsMiddleware)
 
@@ -72,6 +75,16 @@ func (s *Server) RegisterRoutes() http.Handler {
 	admin.HandleFunc("/{id}", s.DeleteUserHandler).Methods("DELETE")
 
 	return r
+}
+
+// timeout middleware use context
+func (s *Server) timeoutMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// only allow the request to be ran in 100 milliseconds
+		ctx, cancel := context.WithTimeout(r.Context(), time.Millisecond*150)
+		defer cancel()
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
 
 // CORS middleware
@@ -133,8 +146,14 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "missing userId in token"})
 			return
 		}
-		user, err := s.db.SelectUserById(userId)
+		// pass context to database query
+		user, err := s.db.SelectUserById(r.Context(), userId)
 		if err != nil {
+			log.Printf("Error selecting user by id: %v", err)
+			if strings.Contains(err.Error(), "timeout") {
+				WriteJSON(w, http.StatusUnauthorized, JSON{"error": err.Error()})
+				return
+			}
 			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "cannot authorize user in jwt"})
 			return
 		}
@@ -142,8 +161,7 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 			WriteJSON(w, http.StatusForbidden, JSON{"error": "user in jwt is inactive"})
 			return
 		}
-		ctx := context.WithValue(r.Context(), ctxUserIdKey, userId)
-		ctx = context.WithValue(ctx, ctxUserKey, *user)
+		ctx := context.WithValue(r.Context(), ctxUserKey, *user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -190,7 +208,7 @@ func (s *Server) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		WriteJSON(w, http.StatusBadRequest, JSON{"error": err.Error()})
 		return
 	}
-	userExisted, err := s.db.SelectUserByEmail(email)
+	userExisted, err := s.db.SelectUserByEmail(r.Context(), email)
 	if err != nil && err != sql.ErrNoRows {
 		log.Printf("Error: %v", err)
 		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
@@ -206,7 +224,7 @@ func (s *Server) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		IsActive: true,
 		Role:     model.RoleUser,
 	}
-	err = s.db.InsertUser(&user)
+	err = s.db.InsertUser(r.Context(), &user)
 	if err != nil {
 		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
 		return
@@ -231,7 +249,7 @@ func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userExisted, err := s.db.SelectUserByEmail(body.Email)
+	userExisted, err := s.db.SelectUserByEmail(r.Context(), body.Email)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "email not found"})
@@ -258,7 +276,7 @@ func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 	paths := strings.Split(r.URL.Path, "/")
 	userId := paths[len(paths)-1] // path/user/{userId}
-	existedUser, err := s.db.SelectUserById(userId)
+	existedUser, err := s.db.SelectUserById(r.Context(), userId)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			WriteJSON(w, http.StatusNotFound, JSON{"error": "user not found"})
@@ -305,7 +323,7 @@ func (s *Server) GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		defer wg.Done()
 		defer close(usersCh)
-		users, err := s.db.SelectUsers(limit, offset, filter, isGetAll)
+		users, err := s.db.SelectUsers(r.Context(), limit, offset, filter, isGetAll)
 		if err != nil {
 			errCh <- err
 			return
@@ -316,7 +334,7 @@ func (s *Server) GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		defer wg.Done()
 		defer close(countCh)
-		countUsers, err := s.db.CountUsers(filter, isGetAll)
+		countUsers, err := s.db.CountUsers(r.Context(), filter, isGetAll)
 		if err != nil {
 			errCh <- err
 			return
@@ -374,12 +392,12 @@ func (s *Server) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	paths := strings.Split(r.URL.Path, "/")
 	userIdPath := paths[len(paths)-1] // path/user/{userId}
-	userIdToken := r.Context().Value(ctxUserIdKey).(string)
+	userIdToken := r.Context().Value(ctxUserKey).(model.User).Id
 	if userIdPath != userIdToken {
 		WriteJSON(w, http.StatusUnauthorized, JSON{"error": "userIdToken and userIdPath mismatch"})
 		return
 	}
-	updatedUserDTO, err := s.db.UpdateUser(userIdPath, email)
+	updatedUserDTO, err := s.db.UpdateUser(r.Context(), userIdPath, email)
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok {
 			if pgErr.Code == "23505" {
@@ -405,13 +423,13 @@ func (s *Server) StatusUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if body.IsActive == nil {
-		WriteJSON(w, http.StatusBadRequest, JSON{"error": "is_active is required"})
+		WriteJSON(w, http.StatusBadRequest, JSON{"error": "is_active is required in request body"})
 		return
 	}
 	paths := strings.Split(r.URL.Path, "/")
 	userIdPath := paths[len(paths)-2] // path/users/{userId}/status
-	userIdToken := r.Context().Value(ctxUserIdKey).(string)
 	userInToken := r.Context().Value(ctxUserKey).(model.User)
+	userIdToken := userInToken.Id
 	// admin can activate or deactivate any user, user can only deactivate itself
 	if userInToken.Role != model.RoleAdmin {
 		// activate
@@ -426,7 +444,7 @@ func (s *Server) StatusUserHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		// fine to continue
 	}
-	err := s.db.UpdateUserStatus(userIdPath, *body.IsActive)
+	err := s.db.UpdateUserStatus(r.Context(), userIdPath, *body.IsActive)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "user to be set status not found"})
@@ -457,17 +475,17 @@ func (s *Server) PasswordUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	paths := strings.Split(r.URL.Path, "/")
 	userIdPath := paths[len(paths)-2] // path/users/{userId}/status
-	userIdToken := r.Context().Value(ctxUserIdKey).(string)
+	userInToken := r.Context().Value(ctxUserKey).(model.User)
+	userIdToken := userInToken.Id
 	if userIdPath != userIdToken {
 		WriteJSON(w, http.StatusForbidden, JSON{"error": "cannot change another user's password"})
 		return
 	}
-	userInToken := r.Context().Value(ctxUserKey).(model.User)
 	if !utils.ValidatePassword(userInToken.Password, body.OldPassword) {
 		WriteJSON(w, http.StatusUnauthorized, JSON{"error": "old password is not correct"})
 		return
 	}
-	err = s.db.UpdateUserPassword(userIdPath, newPassword)
+	err = s.db.UpdateUserPassword(r.Context(), userIdPath, newPassword)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			WriteJSON(w, http.StatusUnauthorized, JSON{"error": "user to be updated password not found"})
@@ -483,12 +501,12 @@ func (s *Server) PasswordUserHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	paths := strings.Split(r.URL.Path, "/")
 	userIdPath := paths[len(paths)-1] // path/users/{userId}
-	userIdToken := r.Context().Value(ctxUserIdKey).(string)
+	userIdToken := r.Context().Value(ctxUserKey).(model.User).Id
 	if userIdPath == userIdToken {
 		WriteJSON(w, http.StatusForbidden, JSON{"error": "admin cannot self-delete"})
 		return
 	}
-	err := s.db.DeleteUserById(userIdPath)
+	err := s.db.DeleteUserById(r.Context(), userIdPath)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			WriteJSON(w, http.StatusNotFound, JSON{"error": "user to be deleted not found"})

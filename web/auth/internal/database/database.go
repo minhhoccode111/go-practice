@@ -26,32 +26,32 @@ type Service interface {
 	Close() error
 
 	// CountUsers returns the number of users in the database for pagination.
-	CountUsers(filter string, isGetAll bool) (int, error)
+	CountUsers(ctx context.Context, filter string, isGetAll bool) (int, error)
 
 	// SelectUsers returns a slice of users from the database for pagination.
-	SelectUsers(limit, offset int, filter string, isGetAll bool) ([]*model.UserDTO, error)
+	SelectUsers(ctx context.Context, limit, offset int, filter string, isGetAll bool) ([]*model.UserDTO, error)
 
 	// NOTE: GetUserById and GetUserByEmail have to return User model because sometimes we need password to update user
 
 	// SelectUserById returns a user from the database by its ID.
-	SelectUserById(id string) (*model.User, error)
+	SelectUserById(ctx context.Context, id string) (*model.User, error)
 	// SelectUserByEmail returns a user from the database by its email.
-	SelectUserByEmail(email string) (*model.User, error)
+	SelectUserByEmail(ctx context.Context, email string) (*model.User, error)
 
 	// InsertUser inserts a new user into the database.
-	InsertUser(user *model.User) error
+	InsertUser(ctx context.Context, user *model.User) error
 
 	// UpdateUser updates the email of a user in the database.
-	UpdateUser(id string, email string) (*model.UserDTO, error)
+	UpdateUser(ctx context.Context, id string, email string) (*model.UserDTO, error)
 
 	// UpdateUserPassword updates the password of a user in the database.
-	UpdateUserPassword(id string, password string) error
+	UpdateUserPassword(ctx context.Context, id string, password string) error
 
 	// UpdateUserStatus updates the status of a user in the database.
-	UpdateUserStatus(id string, isActive bool) error
+	UpdateUserStatus(ctx context.Context, id string, isActive bool) error
 
 	// DeleteUserById deletes a user from the database by its ID.
-	DeleteUserById(id string) error
+	DeleteUserById(ctx context.Context, id string) error
 }
 
 type service struct {
@@ -148,16 +148,16 @@ func (s *service) Close() error {
 	return s.db.Close()
 }
 
-func (s *service) CountUsers(filter string, isGetAll bool) (int, error) {
+func (s *service) CountUsers(ctx context.Context, filter string, isGetAll bool) (int, error) {
 	var count int
 	var err error
 	if isGetAll {
-		err = s.db.QueryRow(`
+		err = s.db.QueryRowContext(ctx, `
 		select count(*) from users
 		where email ilike '%' || $1 || '%'
 		`, filter).Scan(&count)
 	} else {
-		err = s.db.QueryRow(`
+		err = s.db.QueryRowContext(ctx, `
 		select count(*) from users
 		where email ilike '%' || $1 || '%'
 		and is_active = true
@@ -170,17 +170,17 @@ func (s *service) CountUsers(filter string, isGetAll bool) (int, error) {
 	return count, nil
 }
 
-func (s *service) SelectUsers(limit int, offset int, filter string, isGetAll bool) ([]*model.UserDTO, error) {
+func (s *service) SelectUsers(ctx context.Context, limit int, offset int, filter string, isGetAll bool) ([]*model.UserDTO, error) {
 	var rows *sql.Rows
 	var err error
 	if isGetAll {
-		rows, err = s.db.Query(`
+		rows, err = s.db.QueryContext(ctx, `
 		select id, email, is_active, role from users
 		where email ilike '%' || $1 || '%'
 		limit $2 offset $3
 		`, filter, limit, offset)
 	} else {
-		rows, err = s.db.Query(`
+		rows, err = s.db.QueryContext(ctx, `
 		select id, email, is_active, role from users
 		where email ilike '%' || $1 || '%'
 		and is_active = true
@@ -205,9 +205,9 @@ func (s *service) SelectUsers(limit int, offset int, filter string, isGetAll boo
 	return users, nil
 }
 
-func (s *service) SelectUserById(id string) (*model.User, error) {
+func (s *service) SelectUserById(ctx context.Context, id string) (*model.User, error) {
 	var user model.User
-	err := s.db.QueryRow(`
+	err := s.db.QueryRowContext(ctx, `
 		select id, email, is_active, role, password
 		from users
 		where id = $1
@@ -221,9 +221,9 @@ func (s *service) SelectUserById(id string) (*model.User, error) {
 	return &user, nil
 }
 
-func (s *service) SelectUserByEmail(email string) (*model.User, error) {
+func (s *service) SelectUserByEmail(ctx context.Context, email string) (*model.User, error) {
 	var user model.User
-	err := s.db.QueryRow(`
+	err := s.db.QueryRowContext(ctx, `
 		select id, email, is_active, role, password
 		from users
 		where email = $1
@@ -235,13 +235,13 @@ func (s *service) SelectUserByEmail(email string) (*model.User, error) {
 	return &user, nil
 }
 
-func (s *service) InsertUser(user *model.User) error {
+func (s *service) InsertUser(ctx context.Context, user *model.User) error {
 	hashedPassword, err := utils.HashedPassword(user.Password)
 	if err != nil {
 		log.Printf("Error hashing %v: %v", user.Password, err)
 		return fmt.Errorf("Error hashing %v: %v", user.Password, err)
 	}
-	row := s.db.QueryRow(`
+	row := s.db.QueryRowContext(ctx, `
 		insert into users(email, is_active, role, password)
 		values($1, $2, $3, $4)
 		returning id
@@ -259,8 +259,8 @@ func (s *service) InsertUser(user *model.User) error {
 	return nil
 }
 
-func (s *service) UpdateUser(id string, email string) (*model.UserDTO, error) {
-	result := s.db.QueryRow(`
+func (s *service) UpdateUser(ctx context.Context, id string, email string) (*model.UserDTO, error) {
+	result := s.db.QueryRowContext(ctx, `
 		update users
 		set email = $1
 		where id = $2
@@ -277,13 +277,13 @@ func (s *service) UpdateUser(id string, email string) (*model.UserDTO, error) {
 	return &updatedUser, nil
 }
 
-func (s *service) UpdateUserPassword(id string, password string) error {
+func (s *service) UpdateUserPassword(ctx context.Context, id string, password string) error {
 	hashedPassword, err := utils.HashedPassword(password)
 	if err != nil {
 		log.Printf("Error hashing password: %v", err)
 		return fmt.Errorf("Error hashing password: %v", err)
 	}
-	result, err := s.db.Exec(`
+	result, err := s.db.ExecContext(ctx, `
 		update users
 		set password = $1
 		where id = $2
@@ -307,8 +307,8 @@ func (s *service) UpdateUserPassword(id string, password string) error {
 	return nil
 }
 
-func (s *service) UpdateUserStatus(id string, isActive bool) error {
-	result, err := s.db.Exec(`
+func (s *service) UpdateUserStatus(ctx context.Context, id string, isActive bool) error {
+	result, err := s.db.ExecContext(ctx, `
 		update users
 		set is_active = $1
 		where id = $2
@@ -332,8 +332,8 @@ func (s *service) UpdateUserStatus(id string, isActive bool) error {
 	return nil
 }
 
-func (s *service) DeleteUserById(id string) error {
-	result, err := s.db.Exec(`
+func (s *service) DeleteUserById(ctx context.Context, id string) error {
+	result, err := s.db.ExecContext(ctx, `
 		delete from users
 		where id = $1
 		`,
