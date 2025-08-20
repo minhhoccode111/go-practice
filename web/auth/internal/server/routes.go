@@ -12,8 +12,9 @@ import (
 	"sync"
 	"time"
 
-	"auth/internal/model"
-	"auth/internal/utils"
+	// to access without a qualifier
+	. "auth/internal/model"
+	. "auth/internal/utils"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/mux"
@@ -129,7 +130,7 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 			}
-			return []byte(utils.JwtSecret), nil
+			return []byte(JwtSecret), nil
 		})
 		if err != nil {
 			log.Printf("Error parsing token: %v", err)
@@ -169,8 +170,8 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 // Authorization middleware
 func (s *Server) adminMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user := r.Context().Value(ctxUserKey).(model.User)
-		if user.Role != model.RoleAdmin {
+		user := r.Context().Value(ctxUserKey).(User)
+		if user.Role != RoleAdmin {
 			WriteJSON(w, http.StatusForbidden, JSON{"error": "user is not admin"})
 			return
 		}
@@ -196,13 +197,13 @@ func (s *Server) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		WriteJSON(w, http.StatusBadRequest, JSON{"error": err.Error()})
 		return
 	}
-	email, err := utils.IsValidEmail(body.Email)
+	email, err := IsValidEmail(body.Email)
 	if err != nil {
 		log.Printf("Input Email Error: %v", err)
 		WriteJSON(w, http.StatusBadRequest, JSON{"error": err.Error()})
 		return
 	}
-	password, err := utils.IsValidPassword(body.Password)
+	password, err := IsValidPassword(body.Password)
 	if err != nil {
 		log.Printf("Error: %v", err)
 		WriteJSON(w, http.StatusBadRequest, JSON{"error": err.Error()})
@@ -218,19 +219,19 @@ func (s *Server) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		WriteJSON(w, http.StatusConflict, JSON{"error": "email already existed"})
 		return
 	}
-	user := model.User{
+	user := User{
 		Email:    email,
 		Password: password,
 		IsActive: true,
-		Role:     model.RoleUser,
+		Role:     RoleUser,
 	}
 	err = s.db.InsertUser(r.Context(), &user)
 	if err != nil {
 		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
 		return
 	}
-	userDTO := utils.UserToUserDTO(&user)
-	token, err := utils.GenerateJWT(&userDTO)
+	userDTO := UserToUserDTO(&user)
+	token, err := GenerateJWT(&userDTO)
 	if err != nil {
 		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
 		return
@@ -259,12 +260,12 @@ func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
 		return
 	}
-	if !utils.ValidatePassword(userExisted.Password, body.Password) {
+	if !ValidatePassword(userExisted.Password, body.Password) {
 		WriteJSON(w, http.StatusUnauthorized, JSON{"error": "password incorrect"})
 		return
 	}
-	userDTO := utils.UserToUserDTO(userExisted)
-	token, err := utils.GenerateJWT(&userDTO)
+	userDTO := UserToUserDTO(userExisted)
+	token, err := GenerateJWT(&userDTO)
 	if err != nil {
 		log.Printf("Error: %v", err)
 		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
@@ -286,7 +287,7 @@ func (s *Server) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
 		return
 	}
-	WriteJSON(w, http.StatusOK, utils.UserToUserDTO(existedUser))
+	WriteJSON(w, http.StatusOK, UserToUserDTO(existedUser))
 }
 
 func (s *Server) GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
@@ -311,7 +312,7 @@ func (s *Server) GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 		return (a + b - 1) / b // e.g. 10 / 3 = (10 + 3 - 1) / 3 = 4
 	}
 
-	usersCh := make(chan []*model.UserDTO)
+	usersCh := make(chan []*UserDTO)
 	countCh := make(chan int)
 	errCh := make(chan error, 2)
 	defer close(errCh)
@@ -342,7 +343,7 @@ func (s *Server) GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 		countCh <- countUsers
 	}()
 
-	var users []*model.UserDTO
+	var users []*UserDTO
 	var count int
 
 	select {
@@ -364,9 +365,9 @@ func (s *Server) GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetMeHandler(w http.ResponseWriter, r *http.Request) {
-	user := r.Context().Value(ctxUserKey).(model.User)
-	userDTO := utils.UserToUserDTO(&user)
-	token, err := utils.GenerateJWT(&userDTO)
+	user := r.Context().Value(ctxUserKey).(User)
+	userDTO := UserToUserDTO(&user)
+	token, err := GenerateJWT(&userDTO)
 	if err != nil {
 		log.Printf("Error: %v", err)
 		WriteJSON(w, http.StatusInternalServerError, JSON{"error": err.Error()})
@@ -384,7 +385,7 @@ func (s *Server) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 		WriteJSON(w, http.StatusBadRequest, JSON{"error": err.Error()})
 		return
 	}
-	email, err := utils.IsValidEmail(body.Email)
+	email, err := IsValidEmail(body.Email)
 	if err != nil {
 		log.Printf("Error: %v", err)
 		WriteJSON(w, http.StatusBadRequest, JSON{"error": err.Error()})
@@ -392,7 +393,7 @@ func (s *Server) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	paths := strings.Split(r.URL.Path, "/")
 	userIdPath := paths[len(paths)-1] // path/user/{userId}
-	userIdToken := r.Context().Value(ctxUserKey).(model.User).Id
+	userIdToken := r.Context().Value(ctxUserKey).(User).Id
 	if userIdPath != userIdToken {
 		WriteJSON(w, http.StatusUnauthorized, JSON{"error": "userIdToken and userIdPath mismatch"})
 		return
@@ -428,10 +429,10 @@ func (s *Server) StatusUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	paths := strings.Split(r.URL.Path, "/")
 	userIdPath := paths[len(paths)-2] // path/users/{userId}/status
-	userInToken := r.Context().Value(ctxUserKey).(model.User)
+	userInToken := r.Context().Value(ctxUserKey).(User)
 	userIdToken := userInToken.Id
 	// admin can activate or deactivate any user, user can only deactivate itself
-	if userInToken.Role != model.RoleAdmin {
+	if userInToken.Role != RoleAdmin {
 		// activate
 		if *body.IsActive {
 			WriteJSON(w, http.StatusForbidden, JSON{"error": "only admin can activate a user"})
@@ -467,7 +468,7 @@ func (s *Server) PasswordUserHandler(w http.ResponseWriter, r *http.Request) {
 		WriteJSON(w, http.StatusBadRequest, JSON{"error": err.Error()})
 		return
 	}
-	newPassword, err := utils.IsValidPassword(body.NewPassword)
+	newPassword, err := IsValidPassword(body.NewPassword)
 	if err != nil {
 		log.Printf("Error: %v", err)
 		WriteJSON(w, http.StatusBadRequest, JSON{"error": err.Error()})
@@ -475,13 +476,13 @@ func (s *Server) PasswordUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	paths := strings.Split(r.URL.Path, "/")
 	userIdPath := paths[len(paths)-2] // path/users/{userId}/status
-	userInToken := r.Context().Value(ctxUserKey).(model.User)
+	userInToken := r.Context().Value(ctxUserKey).(User)
 	userIdToken := userInToken.Id
 	if userIdPath != userIdToken {
 		WriteJSON(w, http.StatusForbidden, JSON{"error": "cannot change another user's password"})
 		return
 	}
-	if !utils.ValidatePassword(userInToken.Password, body.OldPassword) {
+	if !ValidatePassword(userInToken.Password, body.OldPassword) {
 		WriteJSON(w, http.StatusUnauthorized, JSON{"error": "old password is not correct"})
 		return
 	}
@@ -501,7 +502,7 @@ func (s *Server) PasswordUserHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	paths := strings.Split(r.URL.Path, "/")
 	userIdPath := paths[len(paths)-1] // path/users/{userId}
-	userIdToken := r.Context().Value(ctxUserKey).(model.User).Id
+	userIdToken := r.Context().Value(ctxUserKey).(User).Id
 	if userIdPath == userIdToken {
 		WriteJSON(w, http.StatusForbidden, JSON{"error": "admin cannot self-delete"})
 		return

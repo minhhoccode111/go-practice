@@ -2,10 +2,10 @@
 
 ### admin
 @id_admin = e991d113-58dc-414c-879c-3dd474ab23cc
-@token_admin = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTUwOTExNTcsImlhdCI6MTc1NTAwNDc1NywidXNlcklkIjoiZTk5MWQxMTMtNThkYy00MTRjLTg3OWMtM2RkNDc0YWIyM2NjIn0.5IExnf-Yh0fBuYjqWfmIrTQlNPq4MjcwQqzG7R0q3t8
+@token_admin = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTU3ODU1OTAsImlhdCI6MTc1NTY5OTE5MCwidXNlcklkIjoiZTljMjZlYWMtZTMzOS00YTk3LWIyNWItZGJmZTE5ZGM1ZThjIn0.w5KhQvreyHx8pT8beYyZEUqDw3xbSdi4YHUJzSBKLPs
 ### asd1
-@id_user = 15c1d2c1-6f5a-4a00-a58f-8a2c4e7eaa4d
-@token_user = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTUwOTA3NTksImlhdCI6MTc1NTAwNDM1OSwidXNlcklkIjoiMTVjMWQyYzEtNmY1YS00YTAwLWE1OGYtOGEyYzRlN2VhYTRkIn0.Xry8V-dzu_RLsHV6oQM1qiYEr5w2AiKSN_j7Ew5hppU
+@id_user = fc2c3ebb-6eef-4e0c-8454-599e3208c4bc
+@token_user = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTU3ODYwMTEsImlhdCI6MTc1NTY5OTYxMSwidXNlcklkIjoiZmMyYzNlYmItNmVlZi00ZTBjLTg0NTQtNTk5ZTMyMDhjNGJjIn0.AtTg63oFD-wO-ohy-F2EidPE3W-zVctSVXpx60Znrxo
 
 ###
 GET {{api}}
@@ -17,7 +17,7 @@ GET {{api}}/healthz
 POST {{api}}/auth/register
 
 {
-    "email": "asd5@gmail.com",
+    "email": "asd0@gmail.com",
     "password": "Bruh0!0!"
 }
 
@@ -25,7 +25,7 @@ POST {{api}}/auth/register
 POST {{api}}/auth/login
 
 {
-    "email": "minhhoccode111@gmail.com",
+    "email": "asd0@gmail.com",
     "password": "Bruh0!0!"
 }
 
@@ -48,7 +48,7 @@ PATCH {{api}}/users/{{id_user}}
 Authorization: Bearer {{token_user}}
 
 {
-    "email": "asd3@gmail.com",
+    "email": "asd0@gmail.com",
     "bio": "dummy"
 }
 

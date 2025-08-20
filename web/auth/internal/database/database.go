@@ -1,8 +1,8 @@
 package database
 
 import (
-	"auth/internal/model"
-	"auth/internal/utils"
+	. "auth/internal/model"
+	. "auth/internal/utils"
 	"context"
 	"database/sql"
 	"fmt"
@@ -29,20 +29,20 @@ type Service interface {
 	CountUsers(ctx context.Context, filter string, isGetAll bool) (int, error)
 
 	// SelectUsers returns a slice of users from the database for pagination.
-	SelectUsers(ctx context.Context, limit, offset int, filter string, isGetAll bool) ([]*model.UserDTO, error)
+	SelectUsers(ctx context.Context, limit, offset int, filter string, isGetAll bool) ([]*UserDTO, error)
 
 	// NOTE: GetUserById and GetUserByEmail have to return User model because sometimes we need password to update user
 
 	// SelectUserById returns a user from the database by its ID.
-	SelectUserById(ctx context.Context, id string) (*model.User, error)
+	SelectUserById(ctx context.Context, id string) (*User, error)
 	// SelectUserByEmail returns a user from the database by its email.
-	SelectUserByEmail(ctx context.Context, email string) (*model.User, error)
+	SelectUserByEmail(ctx context.Context, email string) (*User, error)
 
 	// InsertUser inserts a new user into the database.
-	InsertUser(ctx context.Context, user *model.User) error
+	InsertUser(ctx context.Context, user *User) error
 
 	// UpdateUser updates the email of a user in the database.
-	UpdateUser(ctx context.Context, id string, email string) (*model.UserDTO, error)
+	UpdateUser(ctx context.Context, id string, email string) (*UserDTO, error)
 
 	// UpdateUserPassword updates the password of a user in the database.
 	UpdateUserPassword(ctx context.Context, id string, password string) error
@@ -170,7 +170,7 @@ func (s *service) CountUsers(ctx context.Context, filter string, isGetAll bool) 
 	return count, nil
 }
 
-func (s *service) SelectUsers(ctx context.Context, limit int, offset int, filter string, isGetAll bool) ([]*model.UserDTO, error) {
+func (s *service) SelectUsers(ctx context.Context, limit int, offset int, filter string, isGetAll bool) ([]*UserDTO, error) {
 	var rows *sql.Rows
 	var err error
 	if isGetAll {
@@ -192,9 +192,9 @@ func (s *service) SelectUsers(ctx context.Context, limit int, offset int, filter
 		return nil, fmt.Errorf("Error select users: %v", err)
 	}
 	defer rows.Close()
-	var users = []*model.UserDTO{}
+	var users = []*UserDTO{}
 	for rows.Next() {
-		var user model.UserDTO
+		var user UserDTO
 		err := rows.Scan(&user.Id, &user.Email, &user.IsActive, &user.Role)
 		if err != nil {
 			log.Printf("Error Scan UserDTO: %v", err)
@@ -205,8 +205,8 @@ func (s *service) SelectUsers(ctx context.Context, limit int, offset int, filter
 	return users, nil
 }
 
-func (s *service) SelectUserById(ctx context.Context, id string) (*model.User, error) {
-	var user model.User
+func (s *service) SelectUserById(ctx context.Context, id string) (*User, error) {
+	var user User
 	err := s.db.QueryRowContext(ctx, `
 		select id, email, is_active, role, password
 		from users
@@ -221,8 +221,8 @@ func (s *service) SelectUserById(ctx context.Context, id string) (*model.User, e
 	return &user, nil
 }
 
-func (s *service) SelectUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	var user model.User
+func (s *service) SelectUserByEmail(ctx context.Context, email string) (*User, error) {
+	var user User
 	err := s.db.QueryRowContext(ctx, `
 		select id, email, is_active, role, password
 		from users
@@ -235,8 +235,8 @@ func (s *service) SelectUserByEmail(ctx context.Context, email string) (*model.U
 	return &user, nil
 }
 
-func (s *service) InsertUser(ctx context.Context, user *model.User) error {
-	hashedPassword, err := utils.HashedPassword(user.Password)
+func (s *service) InsertUser(ctx context.Context, user *User) error {
+	hashedPassword, err := HashedPassword(user.Password)
 	if err != nil {
 		log.Printf("Error hashing %v: %v", user.Password, err)
 		return fmt.Errorf("Error hashing %v: %v", user.Password, err)
@@ -259,7 +259,7 @@ func (s *service) InsertUser(ctx context.Context, user *model.User) error {
 	return nil
 }
 
-func (s *service) UpdateUser(ctx context.Context, id string, email string) (*model.UserDTO, error) {
+func (s *service) UpdateUser(ctx context.Context, id string, email string) (*UserDTO, error) {
 	result := s.db.QueryRowContext(ctx, `
 		update users
 		set email = $1
@@ -269,7 +269,7 @@ func (s *service) UpdateUser(ctx context.Context, id string, email string) (*mod
 		email,
 		id,
 	)
-	var updatedUser model.UserDTO
+	var updatedUser UserDTO
 	if err := result.Scan(&updatedUser.Id, &updatedUser.Role, &updatedUser.Email, &updatedUser.IsActive); err != nil {
 		log.Printf("Error update user: %v", err)
 		return nil, err
@@ -278,7 +278,7 @@ func (s *service) UpdateUser(ctx context.Context, id string, email string) (*mod
 }
 
 func (s *service) UpdateUserPassword(ctx context.Context, id string, password string) error {
-	hashedPassword, err := utils.HashedPassword(password)
+	hashedPassword, err := HashedPassword(password)
 	if err != nil {
 		log.Printf("Error hashing password: %v", err)
 		return fmt.Errorf("Error hashing password: %v", err)

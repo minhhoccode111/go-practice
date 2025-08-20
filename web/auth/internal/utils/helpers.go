@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"auth/internal/model"
+	. "auth/internal/model"
 	"fmt"
 	"log"
 	"os"
@@ -16,8 +16,8 @@ import (
 
 var JwtSecret = os.Getenv("JWT_SECRET")
 
-func UserToUserDTO(user *model.User) model.UserDTO {
-	return model.UserDTO{
+func UserToUserDTO(user *User) UserDTO {
+	return UserDTO{
 		Id:       user.Id,
 		Email:    user.Email,
 		IsActive: user.IsActive,
@@ -25,7 +25,7 @@ func UserToUserDTO(user *model.User) model.UserDTO {
 	}
 }
 
-func GenerateJWT(user *model.UserDTO) (string, error) {
+func GenerateJWT(user *UserDTO) (string, error) {
 	secretKey := []byte(JwtSecret)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userId": user.Id,
