@@ -1,0 +1,10 @@
+@api = http://localhost:9999
+
+###
+GET {{api}}/view/test
+
+###
+GET {{api}}/edit/test
+
+###
+POST {{api}}/save/test
