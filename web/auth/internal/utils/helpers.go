@@ -1,11 +1,10 @@
 package utils
 
 import (
-	. "auth/internal/model"
+	"auth/internal/config"
+	"auth/internal/model"
 	"fmt"
 	"log"
-	"net/url"
-	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -15,10 +14,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var JwtSecret = os.Getenv("JWT_SECRET")
-
-func UserToUserDTO(user *User) UserDTO {
-	return UserDTO{
+func UserToUserDTO(user *model.User) model.UserDTO {
+	return model.UserDTO{
 		Id:       user.Id,
 		Email:    user.Email,
 		IsActive: user.IsActive,
@@ -26,12 +23,13 @@ func UserToUserDTO(user *User) UserDTO {
 	}
 }
 
-func GenerateJWT(user *UserDTO) (string, error) {
-	secretKey := []byte(JwtSecret)
+func GenerateJWT(jwtConfig config.JWTConfig, user *model.UserDTO) (string, error) {
+	secretKey := []byte(jwtConfig.Secret)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userId": user.Id,
-		"exp":    time.Now().Add(time.Hour * 24).Unix(),
+		"exp":    jwtConfig.Expiration,
 		"iat":    time.Now().Unix(),
+		"iss":    jwtConfig.Issuer,
 	})
 	tokenString, err := token.SignedString(secretKey)
 	if err != nil {
@@ -86,40 +84,4 @@ func IsValidPassword(password string) (string, error) {
 		return "", fmt.Errorf("weak password: '%v'. Must contain at least: 1 uppercase, 1 lowercase, 1 digit, 1 special character", password)
 	}
 	return password, nil
-}
-
-// getAllowedOrigins parses origins from environment variable
-func GetAllowedOrigins() []string {
-	envOrigins := os.Getenv("ACCESS_CONTROL_ALLOW_ORIGIN")
-	if envOrigins == "" {
-		return []string{"*"}
-	}
-
-	var origins []string
-	for origin := range strings.SplitSeq(envOrigins, ",") {
-		trimmed := strings.TrimSpace(origin)
-		if trimmed != "" && isValidOrigin(trimmed) {
-			origins = append(origins, trimmed)
-		}
-	}
-
-	if len(origins) == 0 {
-		return []string{"*"}
-	}
-
-	return origins
-}
-
-// isValidOrigin basic validation (allow * or valid http/https URLs)
-func isValidOrigin(origin string) bool {
-	if origin == "*" {
-		return true
-	}
-
-	u, err := url.Parse(origin)
-	if err != nil {
-		return false
-	}
-
-	return (u.Scheme == "http" || u.Scheme == "https") && u.Host != ""
 }

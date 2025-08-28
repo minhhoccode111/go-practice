@@ -1,40 +1,36 @@
 package server
 
 import (
-	"fmt"
-	"net/http"
-	"os"
-	"strconv"
-	"time"
-
-	_ "github.com/joho/godotenv/autoload"
-
+	"auth/internal/config"
 	"auth/internal/database"
+	"log"
+	"net/http"
 )
 
 type Server struct {
-	port int
-
-	db database.Service
+	config *config.Config
+	db     database.Service
 }
 
 func NewServer() *http.Server {
-	port, _ := strconv.Atoi(os.Getenv("PORT"))
-	NewServer := &Server{
-		port: port,
-
-		db: database.New(),
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatal("Failed to load config:", err)
 	}
 
-	// Declare Server config
-	server := &http.Server{
-		Addr:           fmt.Sprintf(":%d", NewServer.port),
-		Handler:        NewServer.RegisterRoutes(),
-		IdleTimeout:    time.Minute,
+	server := &Server{
+		config: cfg,
+		db:     database.New(cfg.Database.DatabaseURL()),
+	}
+
+	httpServer := &http.Server{
+		Addr:           cfg.Server.ServerAddress(),
+		Handler:        server.RegisterRoutes(),
+		IdleTimeout:    cfg.Server.IdleTimeout,
+		ReadTimeout:    cfg.Server.ReadTimeout,
+		WriteTimeout:   cfg.Server.WriteTimeout,
 		MaxHeaderBytes: 1 << 10,
-		ReadTimeout:    1 * time.Second,
-		WriteTimeout:   1 * time.Second,
 	}
 
-	return server
+	return httpServer
 }
