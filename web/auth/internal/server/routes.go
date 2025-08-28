@@ -19,6 +19,8 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5/pgconn"
+
+	"github.com/coder/websocket"
 )
 
 type JSON map[string]any
@@ -75,6 +77,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	admin.Use(s.adminMiddleware)
 	admin.HandleFunc("/{id}", s.DeleteUserHandler).Methods("DELETE")
 
+	r.HandleFunc("/websocket", s.websocketHandler)
 	return r
 }
 
@@ -518,4 +521,29 @@ func (s *Server) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
+	socket, err := websocket.Accept(w, r, nil)
+
+	if err != nil {
+		log.Printf("could not open websocket: %v", err)
+		_, _ = w.Write([]byte("could not open websocket"))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	defer socket.Close(websocket.StatusGoingAway, "server closing websocket")
+
+	ctx := r.Context()
+	socketCtx := socket.CloseRead(ctx)
+
+	for {
+		payload := fmt.Sprintf("server timestamp: %d", time.Now().UnixNano())
+		err := socket.Write(socketCtx, websocket.MessageText, []byte(payload))
+		if err != nil {
+			break
+		}
+		time.Sleep(time.Second * 2)
+	}
 }
