@@ -1,4 +1,5 @@
-@api = http://localhost:8000
+@url = http://localhost:8000
+@api = http://localhost:8000/api/v1
 
 ### admin
 @id_admin = e991d113-58dc-414c-879c-3dd474ab23cc
@@ -8,16 +9,16 @@
 @token_user = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTU3ODYwMTEsImlhdCI6MTc1NTY5OTYxMSwidXNlcklkIjoiZmMyYzNlYmItNmVlZi00ZTBjLTg0NTQtNTk5ZTMyMDhjNGJjIn0.AtTg63oFD-wO-ohy-F2EidPE3W-zVctSVXpx60Znrxo
 
 ###
-GET {{api}}
+GET {{url}}
 
 ###
-GET {{api}}/healthz
+GET {{url}}/healthz
 
 ###
 POST {{api}}/auth/register
 
 {
-    "email": "asd0@gmail.com",
+    "email": "asd1@gmail.com",
     "password": "Bruh0!0!"
 }
 

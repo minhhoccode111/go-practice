@@ -47,21 +47,31 @@ func WriteJSON(w http.ResponseWriter, status int, data any) {
 func (s *Server) RegisterRoutes() http.Handler {
 	r := mux.NewRouter()
 
-	// Apply timeout middleware
+	// Apply global middleware
 	r.Use(s.timeoutMiddleware)
-	// Apply CORS middleware
 	r.Use(s.corsMiddleware)
 
-	// public
+	// Root level routes (no versioning)
 	r.HandleFunc("/", s.HelloWorldHandler)
 	r.HandleFunc("/healthz", s.healthHandler)
+
+	// API v1 routes
+	v1 := r.PathPrefix("/api/v1").Subrouter()
+	s.registerV1Routes(v1)
+
+	return r
+}
+
+func (s *Server) registerV1Routes(r *mux.Router) {
+	// Public routes
+	r.HandleFunc("/websocket", s.websocketHandler)
 	r.HandleFunc("/auth/register", s.RegisterHandler).Methods("POST")
 	r.HandleFunc("/auth/login", s.LoginHandler).Methods("POST")
 	// WARN: must define '/all' before '/{id}'
 	r.HandleFunc("/users/all", s.GetAllUsersHandler).Methods("GET")
 	r.HandleFunc("/users/{id}", s.GetUserHandler).Methods("GET")
 
-	// user-authenticated routes
+	// User-authenticated routes
 	me := r.PathPrefix("/auth").Subrouter()
 	me.Use(s.authMiddleware)
 	me.HandleFunc("/me", s.GetMeHandler).Methods("GET")
@@ -72,14 +82,11 @@ func (s *Server) RegisterRoutes() http.Handler {
 	// WARN: user can deactivate their account but only admin can activate an account
 	user.HandleFunc("/{id}/status", s.StatusUserHandler).Methods("PATCH")
 
-	// admin-authorized routes
+	// Admin-authorized routes
 	admin := r.PathPrefix("/users").Subrouter()
 	admin.Use(s.authMiddleware)
 	admin.Use(s.adminMiddleware)
 	admin.HandleFunc("/{id}", s.DeleteUserHandler).Methods("DELETE")
-
-	r.HandleFunc("/websocket", s.websocketHandler)
-	return r
 }
 
 // timeout middleware use context
