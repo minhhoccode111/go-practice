@@ -4,6 +4,7 @@ import (
 	. "auth/internal/model"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"regexp"
 	"strings"
@@ -85,4 +86,40 @@ func IsValidPassword(password string) (string, error) {
 		return "", fmt.Errorf("weak password: '%v'. Must contain at least: 1 uppercase, 1 lowercase, 1 digit, 1 special character", password)
 	}
 	return password, nil
+}
+
+// getAllowedOrigins parses origins from environment variable
+func GetAllowedOrigins() []string {
+	envOrigins := os.Getenv("ACCESS_CONTROL_ALLOW_ORIGIN")
+	if envOrigins == "" {
+		return []string{"*"}
+	}
+
+	var origins []string
+	for origin := range strings.SplitSeq(envOrigins, ",") {
+		trimmed := strings.TrimSpace(origin)
+		if trimmed != "" && isValidOrigin(trimmed) {
+			origins = append(origins, trimmed)
+		}
+	}
+
+	if len(origins) == 0 {
+		return []string{"*"}
+	}
+
+	return origins
+}
+
+// isValidOrigin basic validation (allow * or valid http/https URLs)
+func isValidOrigin(origin string) bool {
+	if origin == "*" {
+		return true
+	}
+
+	u, err := url.Parse(origin)
+	if err != nil {
+		return false
+	}
+
+	return (u.Scheme == "http" || u.Scheme == "https") && u.Host != ""
 }
