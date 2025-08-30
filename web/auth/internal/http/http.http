@@ -1,12 +1,12 @@
-@url = http://localhost:8000
-@api = http://localhost:8000/api/v1
+@url = http://0.0.0.0:8000
+@api = http://0.0.0.0:8000/api/v1
 
 ### admin
-@id_admin = e991d113-58dc-414c-879c-3dd474ab23cc
-@token_admin = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTU3ODU1OTAsImlhdCI6MTc1NTY5OTE5MCwidXNlcklkIjoiZTljMjZlYWMtZTMzOS00YTk3LWIyNWItZGJmZTE5ZGM1ZThjIn0.w5KhQvreyHx8pT8beYyZEUqDw3xbSdi4YHUJzSBKLPs
+@id_admin = 09d1e435-5a1d-4f1a-9179-5077d5855069
+@token_admin = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjg2NDAwMDAwMDAwMDAwLCJpYXQiOjE3NTY1NDA0NDMsImlzcyI6ImF1dGh6IiwidXNlcklkIjoiMDlkMWU0MzUtNWExZC00ZjFhLTkxNzktNTA3N2Q1ODU1MDY5In0.TgRYFVWqwA2E7sFAJ4La-T3umOwJ8rCbxI9h9hwZLzc
 ### asd1
-@id_user = fc2c3ebb-6eef-4e0c-8454-599e3208c4bc
-@token_user = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTU3ODYwMTEsImlhdCI6MTc1NTY5OTYxMSwidXNlcklkIjoiZmMyYzNlYmItNmVlZi00ZTBjLTg0NTQtNTk5ZTMyMDhjNGJjIn0.AtTg63oFD-wO-ohy-F2EidPE3W-zVctSVXpx60Znrxo
+@id_user = e885181b-7c9c-437c-b790-0ca5c911cfcd
+@token_user = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjg2NDAwMDAwMDAwMDAwLCJpYXQiOjE3NTY1NDAzNTEsImlzcyI6ImF1dGh6IiwidXNlcklkIjoiZTg4NTE4MWItN2M5Yy00MzdjLWI3OTAtMGNhNWM5MTFjZmNkIn0.zJUHvTTOcaV_wgmb6Ksr0WgOJgUGAZc1YWrtxniMpTY
 
 ###
 GET {{url}}
@@ -18,7 +18,7 @@ GET {{url}}/healthz
 POST {{api}}/auth/register
 
 {
-    "email": "asd1@gmail.com",
+    "email": "minhhoccode111@gmail.com",
     "password": "Bruh0!0!"
 }
 
@@ -27,7 +27,7 @@ POST {{api}}/auth/login
 
 {
     "email": "asd0@gmail.com",
-    "password": "Bruh0!0!"
+    "password": "asdasd"
 }
 
 ###
@@ -49,7 +49,7 @@ PATCH {{api}}/users/{{id_user}}
 Authorization: Bearer {{token_user}}
 
 {
-    "email": "asd0@gmail.com",
+    "email": "asd1@gmail.com",
     "bio": "dummy"
 }
 
@@ -62,7 +62,7 @@ Authorization: Bearer {{token_admin}}
 }
 
 ###
-PATCH {{api}}/users/{{id_user}}/password
+PATCH {{api}}/users/{{id-user}}/password
 Authorization: Bearer {{token_user}}
 
 {

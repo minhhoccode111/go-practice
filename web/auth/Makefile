@@ -66,7 +66,7 @@ watch:
 
 # Goose migration config
 GOOSE=go run github.com/pressly/goose/v3/cmd/goose@latest
-DB_URL=postgres://$(DB_USERNAME):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=$(DB_SSL_MODE)&search_path=$(public)
+DB_URL=postgres://$(DB_USERNAME):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=$(DB_SSL_MODE)&search_path=$(DB_SCHEMA)
 MIGRATIONS_DIR=internal/migrations
 
 # Run all migrations
