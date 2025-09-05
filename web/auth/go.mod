@@ -3,6 +3,7 @@ module auth
 go 1.24.4
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/coder/websocket v1.8.13
 	github.com/golang-jwt/jwt/v5 v5.2.3
 	github.com/gorilla/mux v1.8.1

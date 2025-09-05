@@ -25,9 +25,10 @@ func UserToUserDTO(user *model.User) model.UserDTO {
 
 func GenerateJWT(jwtConfig config.JWTConfig, user *model.UserDTO) (string, error) {
 	secretKey := []byte(jwtConfig.Secret)
+	expirationTime := time.Now().Add(jwtConfig.Expiration).Unix() // Calculate future expiration
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userId": user.Id,
-		"exp":    jwtConfig.Expiration,
+		"exp":    expirationTime, // Use the calculated Unix timestamp
 		"iat":    time.Now().Unix(),
 		"iss":    jwtConfig.Issuer,
 	})
@@ -81,7 +82,10 @@ func IsValidPassword(password string) (string, error) {
 		}
 	}
 	if !hasUpper || !hasLower || !hasDigit || !hasSpecial {
-		return "", fmt.Errorf("weak password: '%v'. Must contain at least: 1 uppercase, 1 lowercase, 1 digit, 1 special character", password)
+		return "", fmt.Errorf(
+			"weak password: '%v'. Must contain at least: 1 uppercase, 1 lowercase, 1 digit, 1 special character",
+			password,
+		)
 	}
 	return password, nil
 }

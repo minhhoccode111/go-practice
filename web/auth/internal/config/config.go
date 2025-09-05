@@ -111,7 +111,7 @@ func validate(config *Config) error {
 
 // Helper functions for environment variable parsing
 func getEnvString(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
+	if value, ok := os.LookupEnv(key); ok {
 		return value
 	}
 	return defaultValue
