@@ -1,750 +1,586 @@
-package database
+package database_test
 
 import (
 	"context"
 	"database/sql"
 	"errors"
-	"testing"
 
+	"auth/internal/database"
 	"auth/internal/model"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-func TestHealth_Up(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	defer db.Close()
+var _ = Describe("Database Service", func() {
+	var (
+		db   *sql.DB
+		mock sqlmock.Sqlmock
+		s    database.Service
+		ctx  context.Context
+		err  error
+	)
 
-	s := &service{db: db}
-
-	mock.ExpectPing() // Expect a successful ping
-
-	stats := s.Health()
-
-	if stats["status"] != "up" {
-		t.Errorf("Expected status 'up', got %s", stats["status"])
-	}
-	if stats["message"] != "It's healthy" {
-		t.Errorf("Expected message 'It's healthy', got %s", stats["message"])
-	}
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
-	}
-}
-
-// func TestHealth_Down(t *testing.T) {
-// 	db, mock, err := sqlmock.New()
-// 	if err != nil {
-// 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-// 	}
-// 	defer db.Close()
-//
-// 	s := &service{db: db}
-//
-// 	mock.ExpectPing().WillReturnError(errors.New("db connection error")) // Expect a failed ping
-//
-// 	stats := s.Health()
-//
-// 	if stats["status"] != "down" {
-// 		t.Errorf("Expected status 'down', got %s", stats["status"])
-// 	}
-// 	if stats["error"] != "db down: db connection error" {
-// 		t.Errorf("Expected error 'db down: db connection error', got %s", stats["error"])
-// 	}
-//
-// 	if err := mock.ExpectationsWereMet(); err != nil {
-// 		t.Errorf("there were unfulfilled expectations: %s", err)
-// 	}
-// }
-
-func TestClose(t *testing.T) {
-	dbName := "testdb"
-
-	t.Run("Successful Close", func(t *testing.T) {
-		db, mock, err := sqlmock.New()
-		if err != nil {
-			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-		}
-		defer db.Close()
-
-		s := &service{db: db}
-
-		mock.ExpectClose().WillReturnError(nil)
-
-		err = s.Close(dbName)
-		if err != nil {
-			t.Errorf("Close() error = %v, wantErr %v", err, false)
-		}
-		if err := mock.ExpectationsWereMet(); err != nil {
-			t.Errorf("there were unfulfilled expectations: %s", err)
-		}
+	BeforeEach(func() {
+		db, mock, err = sqlmock.New()
+		Expect(err).ToNot(HaveOccurred(), "sqlmock.New should not return an error")
+		s = database.NewService(db)
+		ctx = context.Background()
 	})
 
-	t.Run("Failed Close", func(t *testing.T) {
-		db, mock, err := sqlmock.New()
-		if err != nil {
-			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-		}
-		defer db.Close()
-
-		s := &service{db: db}
-
-		mock.ExpectClose().WillReturnError(errors.New("close error"))
-
-		err = s.Close(dbName)
-		if err == nil {
-			t.Errorf("Close() error = %v, wantErr %v", err, true)
-		}
-		if err := mock.ExpectationsWereMet(); err != nil {
-			t.Errorf("there were unfulfilled expectations: %s", err)
-		}
-	})
-}
-
-func TestCountUsers(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	defer db.Close()
-
-	s := &service{db: db}
-	ctx := context.Background()
-
-	t.Run("Successful Count - isGetAll true", func(t *testing.T) {
-		filter := "test"
-		isGetAll := true
-		expectedCount := 5
-
-		mock.ExpectQuery(`
-		select count\(\*\) from users
-		where email ilike '%' \|\| \$1 \|\| '%'
-		`).WithArgs(filter).WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(expectedCount))
-
-		count, err := s.CountUsers(ctx, filter, isGetAll)
-		if err != nil {
-			t.Errorf("CountUsers() error = %v, wantErr %v", err, false)
-		}
-		if count != expectedCount {
-			t.Errorf("CountUsers() got = %v, expected %v", count, expectedCount)
-		}
+	AfterEach(func() {
+		Expect(mock.ExpectationsWereMet()).ToNot(HaveOccurred(), "There were unfulfilled expectations")
 	})
 
-	t.Run("Successful Count - isGetAll false", func(t *testing.T) {
-		filter := "test"
-		isGetAll := false
-		expectedCount := 3
+	Describe("Health", func() {
+		Context("when the database is up", func() {
+			BeforeEach(func() {
+				mock.ExpectPing()
+			})
 
-		mock.ExpectQuery(`
-		select count\(\*\) from users
-		where email ilike '%' \|\| \$1 \|\| '%'
-		and is_active = true
-		`).WithArgs(filter).WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(expectedCount))
+			It("returns an 'up' status", func() {
+				stats := s.Health()
+				Expect(stats["status"]).To(Equal("up"))
+				Expect(stats["message"]).To(Equal("It's healthy"))
+			})
+		})
 
-		count, err := s.CountUsers(ctx, filter, isGetAll)
-		if err != nil {
-			t.Errorf("CountUsers() error = %v, wantErr %v", err, false)
-		}
-		if count != expectedCount {
-			t.Errorf("CountUsers() got = %v, expected %v", count, expectedCount)
-		}
+		Context("when the database is down", func() {
+			BeforeEach(func() {
+				mock.ExpectPing().WillReturnError(errors.New("db connection error"))
+			})
+
+			PIt("returns a 'down' status and an error message", func() {
+				stats := s.Health()
+				Expect(stats["status"]).To(Equal("down"))
+				Expect(stats["error"]).To(Equal("db down: db connection error"))
+			})
+		})
 	})
 
-	t.Run("Database Error", func(t *testing.T) {
-		filter := "test"
-		isGetAll := true
+	Describe("Close", func() {
+		Context("when the database closes successfully", func() {
+			BeforeEach(func() {
+				mock.ExpectClose().WillReturnError(nil)
+			})
 
-		mock.ExpectQuery(`
-		select count\(\*\) from users
-		where email ilike '%' \|\| \$1 \|\| '%'
-		`).WithArgs(filter).WillReturnError(errors.New("db error"))
+			It("returns no error", func() {
+				err := s.Close("testdb")
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
 
-		_, err := s.CountUsers(ctx, filter, isGetAll)
-		if err == nil {
-			t.Errorf("CountUsers() error = %v, wantErr %v", err, true)
-		}
+		Context("when the database fails to close", func() {
+			BeforeEach(func() {
+				mock.ExpectClose().WillReturnError(errors.New("close error"))
+			})
+
+			It("returns an error", func() {
+				err := s.Close("testdb")
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("close error"))
+			})
+		})
 	})
 
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
-	}
-}
+	Describe("CountUsers", func() {
+		Context("when isGetAll is true", func() {
+			It("returns the correct count for a given filter", func() {
+				filter := "test"
+				isGetAll := true
+				expectedCount := 5
 
-func TestSelectUsers(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	defer db.Close()
+				mock.ExpectQuery(`
+				select count\(\*\) from users
+				where email ilike '%' \|\| \$1 \|\| '%'
+				`).WithArgs(filter).WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(expectedCount))
 
-	s := &service{db: db}
-	ctx := context.Background()
+				count, err := s.CountUsers(ctx, filter, isGetAll)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(count).To(Equal(expectedCount))
+			})
+		})
 
-	t.Run("Successful Select - isGetAll true", func(t *testing.T) {
-		filter := "test"
-		limit := 2
-		offset := 0
-		isGetAll := true
-		expectedUsers := []*model.UserDTO{
-			{Id: "1", Email: "test1@example.com", IsActive: true, Role: model.RoleUser},
-			{Id: "2", Email: "test2@example.com", IsActive: true, Role: model.RoleAdmin},
-		}
+		Context("when isGetAll is false", func() {
+			It("returns the correct count for active users with a given filter", func() {
+				filter := "test"
+				isGetAll := false
+				expectedCount := 3
 
-		rows := sqlmock.NewRows([]string{"id", "email", "is_active", "role"}).
-			AddRow("1", "test1@example.com", true, model.RoleUser).
-			AddRow("2", "test2@example.com", true, model.RoleAdmin)
+				mock.ExpectQuery(`
+				select count\(\*\) from users
+				where email ilike '%' \|\| \$1 \|\| '%'
+				and is_active = true
+				`).WithArgs(filter).WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(expectedCount))
 
-		mock.ExpectQuery(`
-		select id, email, is_active, role from users
-		where email ilike '%' \|\| \$1 \|\| '%'
-		limit \$2 offset \$3
-		`).WithArgs(filter, limit, offset).WillReturnRows(rows)
+				count, err := s.CountUsers(ctx, filter, isGetAll)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(count).To(Equal(expectedCount))
+			})
+		})
 
-		users, err := s.SelectUsers(ctx, limit, offset, filter, isGetAll)
-		if err != nil {
-			t.Errorf("SelectUsers() error = %v, wantErr %v", err, false)
-		}
-		if len(users) != len(expectedUsers) {
-			t.Errorf("SelectUsers() got %d users, expected %d", len(users), len(expectedUsers))
-		}
-		for i, user := range users {
-			if *user != *expectedUsers[i] {
-				t.Errorf(
-					"SelectUsers() at index %d got %v, expected %v",
-					i,
-					*user,
-					*expectedUsers[i],
-				)
-			}
-		}
+		Context("when a database error occurs", func() {
+			It("returns an error", func() {
+				filter := "test"
+				isGetAll := true
+
+				mock.ExpectQuery(`
+				select count\(\*\) from users
+				where email ilike '%' \|\| \$1 \|\| '%'
+				`).WithArgs(filter).WillReturnError(errors.New("db error"))
+
+				_, err := s.CountUsers(ctx, filter, isGetAll)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("db error"))
+			})
+		})
 	})
 
-	t.Run("Successful Select - isGetAll false", func(t *testing.T) {
-		filter := "test"
-		limit := 1
-		offset := 0
-		isGetAll := false
-		expectedUsers := []*model.UserDTO{
-			{Id: "1", Email: "test1@example.com", IsActive: true, Role: model.RoleUser},
-		}
+	Describe("SelectUsers", func() {
+		Context("when isGetAll is true", func() {
+			It("returns the correct list of users", func() {
+				filter := "test"
+				limit := 2
+				offset := 0
+				isGetAll := true
+				expectedUsers := []*model.UserDTO{
+					{Id: "1", Email: "test1@example.com", IsActive: true, Role: model.RoleUser},
+					{Id: "2", Email: "test2@example.com", IsActive: true, Role: model.RoleAdmin},
+				}
 
-		rows := sqlmock.NewRows([]string{"id", "email", "is_active", "role"}).
-			AddRow("1", "test1@example.com", true, model.RoleUser)
+				rows := sqlmock.NewRows([]string{"id", "email", "is_active", "role"}).
+					AddRow("1", "test1@example.com", true, model.RoleUser).
+					AddRow("2", "test2@example.com", true, model.RoleAdmin)
 
-		mock.ExpectQuery(`
-		select id, email, is_active, role from users
-		where email ilike '%' \|\| \$1 \|\| '%'
-		and is_active = true
-		limit \$2 offset \$3
-		`).WithArgs(filter, limit, offset).WillReturnRows(rows)
+				mock.ExpectQuery(`
+				select id, email, is_active, role from users
+				where email ilike '%' \|\| \$1 \|\| '%'
+				limit \$2 offset \$3
+				`).WithArgs(filter, limit, offset).WillReturnRows(rows)
 
-		users, err := s.SelectUsers(ctx, limit, offset, filter, isGetAll)
-		if err != nil {
-			t.Errorf("SelectUsers() error = %v, wantErr %v", err, false)
-		}
-		if len(users) != len(expectedUsers) {
-			t.Errorf("SelectUsers() got %d users, expected %d", len(users), len(expectedUsers))
-		}
-		for i, user := range users {
-			if *user != *expectedUsers[i] {
-				t.Errorf(
-					"SelectUsers() at index %d got %v, expected %v",
-					i,
-					*user,
-					*expectedUsers[i],
-				)
-			}
-		}
+				users, err := s.SelectUsers(ctx, limit, offset, filter, isGetAll)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(users).To(HaveLen(len(expectedUsers)))
+				Expect(users).To(ConsistOf(expectedUsers))
+			})
+		})
+
+		Context("when isGetAll is false", func() {
+			It("returns the correct list of active users", func() {
+				filter := "test"
+				limit := 1
+				offset := 0
+				isGetAll := false
+				expectedUsers := []*model.UserDTO{
+					{Id: "1", Email: "test1@example.com", IsActive: true, Role: model.RoleUser},
+				}
+
+				rows := sqlmock.NewRows([]string{"id", "email", "is_active", "role"}).
+					AddRow("1", "test1@example.com", true, model.RoleUser)
+
+				mock.ExpectQuery(`
+				select id, email, is_active, role from users
+				where email ilike '%' \|\| \$1 \|\| '%'
+				and is_active = true
+				`).WithArgs(filter, limit, offset).WillReturnRows(rows)
+
+				users, err := s.SelectUsers(ctx, limit, offset, filter, isGetAll)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(users).To(HaveLen(len(expectedUsers)))
+				Expect(users).To(ConsistOf(expectedUsers))
+			})
+		})
+
+		Context("when a database error occurs", func() {
+			It("returns an error", func() {
+				filter := "test"
+				limit := 1
+				offset := 0
+				isGetAll := true
+
+				mock.ExpectQuery(`
+				select id, email, is_active, role from users
+				where email ilike '%' \|\| \$1 \|\| '%'
+				limit \$2 offset \$3
+				`).WithArgs(filter, limit, offset).WillReturnError(errors.New("db error"))
+
+				_, err := s.SelectUsers(ctx, limit, offset, filter, isGetAll)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("db error"))
+			})
+		})
 	})
 
-	t.Run("Database Error", func(t *testing.T) {
-		filter := "test"
-		limit := 1
-		offset := 0
-		isGetAll := true
+	Describe("SelectUserById", func() {
+		Context("when the user exists", func() {
+			It("returns the user", func() {
+				id := "123"
+				expectedUser := &model.User{
+					Id:       "123",
+					Email:    "test@example.com",
+					IsActive: true,
+					Role:     model.RoleUser,
+					Password: "hashedpassword",
+				}
 
-		mock.ExpectQuery(`
-		select id, email, is_active, role from users
-		where email ilike '%' \|\| \$1 \|\| '%'
-		limit \$2 offset \$3
-		`).WithArgs(filter, limit, offset).WillReturnError(errors.New("db error"))
+				rows := sqlmock.NewRows([]string{"id", "email", "is_active", "role", "password"}).
+					AddRow(expectedUser.Id, expectedUser.Email, expectedUser.IsActive, expectedUser.Role, expectedUser.Password)
 
-		_, err := s.SelectUsers(ctx, limit, offset, filter, isGetAll)
-		if err == nil {
-			t.Errorf("SelectUsers() error = %v, wantErr %v", err, true)
-		}
+				mock.ExpectQuery(`
+				select id, email, is_active, role, password
+				from users
+				where id = \$1
+				`).WithArgs(id).WillReturnRows(rows)
+
+				user, err := s.SelectUserById(ctx, id)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(user).To(Equal(expectedUser))
+			})
+		})
+
+		Context("when the user does not exist", func() {
+			It("returns sql.ErrNoRows", func() {
+				id := "nonexistent"
+
+				mock.ExpectQuery(`
+				select id, email, is_active, role, password
+				from users
+				where id = \$1
+				`).WithArgs(id).WillReturnError(sql.ErrNoRows)
+
+				_, err := s.SelectUserById(ctx, id)
+				Expect(err).To(MatchError(sql.ErrNoRows))
+			})
+		})
+
+		Context("when a database error occurs", func() {
+			It("returns an error", func() {
+				id := "123"
+
+				mock.ExpectQuery(`
+				select id, email, is_active, role, password
+				from users
+				where id = \$1
+				`).WithArgs(id).WillReturnError(errors.New("db error"))
+
+				_, err := s.SelectUserById(ctx, id)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("db error"))
+			})
+		})
 	})
 
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
-	}
-}
+	Describe("SelectUserByEmail", func() {
+		Context("when the user exists", func() {
+			It("returns the user", func() {
+				email := "test@example.com"
+				expectedUser := &model.User{
+					Id:       "123",
+					Email:    "test@example.com",
+					IsActive: true,
+					Role:     model.RoleUser,
+					Password: "hashedpassword",
+				}
 
-func TestSelectUserById(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	defer db.Close()
+				rows := sqlmock.NewRows([]string{"id", "email", "is_active", "role", "password"}).
+					AddRow(expectedUser.Id, expectedUser.Email, expectedUser.IsActive, expectedUser.Role, expectedUser.Password)
 
-	s := &service{db: db}
-	ctx := context.Background()
+				mock.ExpectQuery(`
+				select id, email, is_active, role, password
+				from users
+				where email = \$1
+				`).WithArgs(email).WillReturnRows(rows)
 
-	t.Run("Successful Select", func(t *testing.T) {
-		id := "123"
-		expectedUser := &model.User{
-			Id:       "123",
-			Email:    "test@example.com",
-			IsActive: true,
-			Role:     model.RoleUser,
-			Password: "hashedpassword",
-		}
+				user, err := s.SelectUserByEmail(ctx, email)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(user).To(Equal(expectedUser))
+			})
+		})
 
-		rows := sqlmock.NewRows([]string{"id", "email", "is_active", "role", "password"}).
-			AddRow(expectedUser.Id, expectedUser.Email, expectedUser.IsActive, expectedUser.Role, expectedUser.Password)
+		Context("when the user does not exist", func() {
+			It("returns sql.ErrNoRows", func() {
+				email := "nonexistent@example.com"
 
-		mock.ExpectQuery(`
-		select id, email, is_active, role, password
-		from users
-		where id = \$1
-		`).WithArgs(id).WillReturnRows(rows)
+				mock.ExpectQuery(`
+				select id, email, is_active, role, password
+				from users
+				where email = \$1
+				`).WithArgs(email).WillReturnError(sql.ErrNoRows)
 
-		user, err := s.SelectUserById(ctx, id)
-		if err != nil {
-			t.Errorf("SelectUserById() error = %v, wantErr %v", err, false)
-		}
-		if *user != *expectedUser {
-			t.Errorf("SelectUserById() got = %v, expected %v", *user, *expectedUser)
-		}
+				_, err := s.SelectUserByEmail(ctx, email)
+				Expect(err).To(MatchError(sql.ErrNoRows))
+			})
+		})
+
+		Context("when a database error occurs", func() {
+			It("returns an error", func() {
+				email := "test@example.com"
+
+				mock.ExpectQuery(`
+				select id, email, is_active, role, password
+				from users
+				where email = \$1
+				`).WithArgs(email).WillReturnError(errors.New("db error"))
+
+				_, err := s.SelectUserByEmail(ctx, email)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("db error"))
+			})
+		})
 	})
 
-	t.Run("User Not Found", func(t *testing.T) {
-		id := "nonexistent"
+	Describe("InsertUser", func() {
+		Context("when the insert is successful", func() {
+			It("inserts the user and returns no error", func() {
+				user := &model.User{
+					Email:    "newuser@example.com",
+					IsActive: true,
+					Role:     model.RoleUser,
+					Password: "Password123!",
+				}
+				expectedID := "generated-id-123"
 
-		mock.ExpectQuery(`
-		select id, email, is_active, role, password
-		from users
-		where id = \$1
-		`).WithArgs(id).WillReturnError(sql.ErrNoRows)
+				mock.ExpectQuery(`
+				insert into users\(email, is_active, role, password\)
+				values\(\$1, \$2, \$3, \$4\)
+				returning id
+				`).WithArgs(user.Email, user.IsActive, user.Role, sqlmock.AnyArg()).WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(expectedID))
 
-		_, err := s.SelectUserById(ctx, id)
-		if err == nil || err != sql.ErrNoRows {
-			t.Errorf("SelectUserById() error = %v, expected %v", err, sql.ErrNoRows)
-		}
+				err := s.InsertUser(ctx, user)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(user.Id).To(Equal(expectedID))
+			})
+		})
+
+		Context("when a database error occurs", func() {
+			It("returns an error", func() {
+				user := &model.User{
+					Email:    "error@example.com",
+					IsActive: true,
+					Role:     model.RoleUser,
+					Password: "Password123!",
+				}
+
+				mock.ExpectQuery(`
+				insert into users\(email, is_active, role, password\)
+				values\(\$1, \$2, \$3, \$4\)
+				returning id
+				`).WithArgs(user.Email, user.IsActive, user.Role, sqlmock.AnyArg()).WillReturnError(errors.New("db error"))
+
+				err := s.InsertUser(ctx, user)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("db error"))
+			})
+		})
 	})
 
-	t.Run("Database Error", func(t *testing.T) {
-		id := "123"
+	Describe("UpdateUser", func() {
+		Context("when the update is successful", func() {
+			It("updates the user and returns the updated DTO", func() {
+				id := "123"
+				newEmail := "updated@example.com"
+				expectedUserDTO := &model.UserDTO{
+					Id:       "123",
+					Email:    "updated@example.com",
+					IsActive: true,
+					Role:     model.RoleUser,
+				}
 
-		mock.ExpectQuery(`
-		select id, email, is_active, role, password
-		from users
-		where id = \$1
-		`).WithArgs(id).WillReturnError(errors.New("db error"))
+				rows := sqlmock.NewRows([]string{"id", "role", "email", "is_active"}).
+					AddRow(expectedUserDTO.Id, expectedUserDTO.Role, expectedUserDTO.Email, expectedUserDTO.IsActive)
 
-		_, err := s.SelectUserById(ctx, id)
-		if err == nil {
-			t.Errorf("SelectUserById() error = %v, wantErr %v", err, true)
-		}
+				mock.ExpectQuery(`
+				update users
+				set email = \$1
+				where id = \$2
+				returning id, role, email, is_active
+				`).WithArgs(newEmail, id).WillReturnRows(rows)
+
+				userDTO, err := s.UpdateUser(ctx, id, newEmail)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(userDTO).To(Equal(expectedUserDTO))
+			})
+		})
+
+		Context("when a database error occurs", func() {
+			It("returns an error", func() {
+				id := "123"
+				newEmail := "updated@example.com"
+
+				mock.ExpectQuery(`
+				update users
+				set email = \$1
+				where id = \$2
+				returning id, role, email, is_active
+				`).WithArgs(newEmail, id).WillReturnError(errors.New("db error"))
+
+				_, err := s.UpdateUser(ctx, id, newEmail)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("db error"))
+			})
+		})
 	})
 
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
-	}
-}
+	Describe("UpdateUserPassword", func() {
+		Context("when the update is successful", func() {
+			It("updates the user's password and returns no error", func() {
+				id := "123"
+				newPassword := "NewPassword123!"
 
-func TestSelectUserByEmail(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	defer db.Close()
+				mock.ExpectExec(`
+				update users
+				set password = \$1
+				where id = \$2
+				`).WithArgs(sqlmock.AnyArg(), id).WillReturnResult(sqlmock.NewResult(1, 1))
 
-	s := &service{db: db}
-	ctx := context.Background()
+				err := s.UpdateUserPassword(ctx, id, newPassword)
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
 
-	t.Run("Successful Select", func(t *testing.T) {
-		email := "test@example.com"
-		expectedUser := &model.User{
-			Id:       "123",
-			Email:    "test@example.com",
-			IsActive: true,
-			Role:     model.RoleUser,
-			Password: "hashedpassword",
-		}
+		Context("when the user is not found", func() {
+			It("returns sql.ErrNoRows", func() {
+				id := "nonexistent"
+				newPassword := "NewPassword123!"
 
-		rows := sqlmock.NewRows([]string{"id", "email", "is_active", "role", "password"}).
-			AddRow(expectedUser.Id, expectedUser.Email, expectedUser.IsActive, expectedUser.Role, expectedUser.Password)
+				mock.ExpectExec(`
+				update users
+				set password = \$1
+				where id = \$2
 
-		mock.ExpectQuery(`
-		select id, email, is_active, role, password
-		from users
-		where email = \$1
-		`).WithArgs(email).WillReturnRows(rows)
+				`).WithArgs(sqlmock.AnyArg(), id).WillReturnResult(sqlmock.NewResult(1, 0))
 
-		user, err := s.SelectUserByEmail(ctx, email)
-		if err != nil {
-			t.Errorf("SelectUserByEmail() error = %v, wantErr %v", err, false)
-		}
-		if *user != *expectedUser {
-			t.Errorf("SelectUserByEmail() got = %v, expected %v", *user, *expectedUser)
-		}
+				err := s.UpdateUserPassword(ctx, id, newPassword)
+				Expect(err).To(MatchError(sql.ErrNoRows))
+			})
+		})
+
+		Context("when a database error occurs", func() {
+			It("returns an error", func() {
+				id := "123"
+				newPassword := "NewPassword123!"
+
+				mock.ExpectExec(`
+				update users
+				set password = \$1
+				where id = \$2
+				`).WithArgs(sqlmock.AnyArg(), id).WillReturnError(errors.New("db error"))
+
+				err := s.UpdateUserPassword(ctx, id, newPassword)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("db error"))
+			})
+		})
 	})
 
-	t.Run("User Not Found", func(t *testing.T) {
-		email := "nonexistent@example.com"
+	Describe("UpdateUserStatus", func() {
+		Context("when the update is successful", func() {
+			It("updates the user's status to active", func() {
+				id := "123"
+				isActive := true
 
-		mock.ExpectQuery(`
-		select id, email, is_active, role, password
-		from users
-		where email = \$1
-		`).WithArgs(email).WillReturnError(sql.ErrNoRows)
+				mock.ExpectExec(`
+				update users
+				set is_active = \$1
+				where id = \$2
+				`).WithArgs(isActive, id).WillReturnResult(sqlmock.NewResult(1, 1))
 
-		_, err := s.SelectUserByEmail(ctx, email)
-		if err == nil || err != sql.ErrNoRows {
-			t.Errorf("SelectUserByEmail() error = %v, expected %v", err, sql.ErrNoRows)
-		}
+				err := s.UpdateUserStatus(ctx, id, isActive)
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("updates the user's status to inactive", func() {
+				id := "123"
+				isActive := false
+
+				mock.ExpectExec(`
+				update users
+				set is_active = \$1
+				where id = \$2
+				`).WithArgs(isActive, id).WillReturnResult(sqlmock.NewResult(1, 1))
+
+				err := s.UpdateUserStatus(ctx, id, isActive)
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
+
+		Context("when the user is not found", func() {
+			It("returns sql.ErrNoRows", func() {
+				id := "nonexistent"
+				isActive := true
+
+				mock.ExpectExec(`
+				update users
+				set is_active = \$1
+				where id = \$2
+				`).WithArgs(isActive, id).WillReturnResult(sqlmock.NewResult(1, 0))
+
+				err := s.UpdateUserStatus(ctx, id, isActive)
+				Expect(err).To(MatchError(sql.ErrNoRows))
+			})
+		})
+
+		Context("when a database error occurs", func() {
+			It("returns an error", func() {
+				id := "123"
+				isActive := true
+
+				mock.ExpectExec(`
+				update users
+				set is_active = \$1
+				where id = \$2
+				`).WithArgs(isActive, id).WillReturnError(errors.New("db error"))
+
+				err := s.UpdateUserStatus(ctx, id, isActive)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("db error"))
+			})
+		})
 	})
 
-	t.Run("Database Error", func(t *testing.T) {
-		email := "test@example.com"
+	Describe("DeleteUserById", func() {
+		Context("when the delete is successful", func() {
+			It("deletes the user and returns no error", func() {
+				id := "123"
 
-		mock.ExpectQuery(`
-		select id, email, is_active, role, password
-		from users
-		where email = \$1
-		`).WithArgs(email).WillReturnError(errors.New("db error"))
+				mock.ExpectExec(`
+				delete from users
+				where id = \$1
+				`).WithArgs(id).WillReturnResult(sqlmock.NewResult(1, 1))
 
-		_, err := s.SelectUserByEmail(ctx, email)
-		if err == nil {
-			t.Errorf("SelectUserByEmail() error = %v, wantErr %v", err, true)
-		}
+				err := s.DeleteUserById(ctx, id)
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
+
+		Context("when the user is not found", func() {
+			It("returns sql.ErrNoRows", func() {
+				id := "nonexistent"
+
+				mock.ExpectExec(`
+				delete from users
+				where id = \$1
+				`).WithArgs(id).WillReturnResult(sqlmock.NewResult(1, 0))
+
+				err := s.DeleteUserById(ctx, id)
+				Expect(err).To(MatchError(sql.ErrNoRows))
+			})
+		})
+
+		Context("when a database error occurs", func() {
+			It("returns an error", func() {
+				id := "123"
+
+				mock.ExpectExec(`
+				delete from users
+				where id = \$1
+				`).WithArgs(id).WillReturnError(errors.New("db error"))
+
+				err := s.DeleteUserById(ctx, id)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("db error"))
+			})
+		})
 	})
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
-	}
-}
-
-func TestInsertUser(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	defer db.Close()
-
-	s := &service{db: db}
-	ctx := context.Background()
-
-	t.Run("Successful Insert", func(t *testing.T) {
-		user := &model.User{
-			Email:    "newuser@example.com",
-			IsActive: true,
-			Role:     model.RoleUser,
-			Password: "Password123!",
-		}
-		expectedID := "generated-id-123"
-
-		mock.ExpectQuery(`
-		insert into users\(email, is_active, role, password\)
-		values\(\$1, \$2, \$3, \$4\)
-		returning id
-		`).WithArgs(user.Email, user.IsActive, user.Role, sqlmock.AnyArg()).WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(expectedID))
-
-		err := s.InsertUser(ctx, user)
-		if err != nil {
-			t.Errorf("InsertUser() error = %v, wantErr %v", err, false)
-		}
-		if user.Id != expectedID {
-			t.Errorf("InsertUser() got ID %v, expected %v", user.Id, expectedID)
-		}
-	})
-
-	t.Run("Database Error", func(t *testing.T) {
-		user := &model.User{
-			Email:    "error@example.com",
-			IsActive: true,
-			Role:     model.RoleUser,
-			Password: "Password123!",
-		}
-
-		mock.ExpectQuery(`
-		insert into users\(email, is_active, role, password\)
-		values\(\$1, \$2, \$3, \$4\)
-		returning id
-		`).WithArgs(user.Email, user.IsActive, user.Role, sqlmock.AnyArg()).WillReturnError(errors.New("db error"))
-
-		err := s.InsertUser(ctx, user)
-		if err == nil {
-			t.Errorf("InsertUser() error = %v, wantErr %v", err, true)
-		}
-	})
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
-	}
-}
-
-func TestUpdateUser(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	defer db.Close()
-
-	s := &service{db: db}
-	ctx := context.Background()
-
-	t.Run("Successful Update", func(t *testing.T) {
-		id := "123"
-		newEmail := "updated@example.com"
-		expectedUserDTO := &model.UserDTO{
-			Id:       "123",
-			Email:    "updated@example.com",
-			IsActive: true,
-			Role:     model.RoleUser,
-		}
-
-		rows := sqlmock.NewRows([]string{"id", "role", "email", "is_active"}).
-			AddRow(expectedUserDTO.Id, expectedUserDTO.Role, expectedUserDTO.Email, expectedUserDTO.IsActive)
-
-		mock.ExpectQuery(`
-		update users
-		set email = \$1
-		where id = \$2
-		returning id, role, email, is_active
-		`).WithArgs(newEmail, id).WillReturnRows(rows)
-
-		userDTO, err := s.UpdateUser(ctx, id, newEmail)
-		if err != nil {
-			t.Errorf("UpdateUser() error = %v, wantErr %v", err, false)
-		}
-		if *userDTO != *expectedUserDTO {
-			t.Errorf("UpdateUser() got = %v, expected %v", *userDTO, *expectedUserDTO)
-		}
-	})
-
-	t.Run("Database Error", func(t *testing.T) {
-		id := "123"
-		newEmail := "updated@example.com"
-
-		mock.ExpectQuery(`
-		update users
-		set email = \$1
-		where id = \$2
-		returning id, role, email, is_active
-		`).WithArgs(newEmail, id).WillReturnError(errors.New("db error"))
-
-		_, err := s.UpdateUser(ctx, id, newEmail)
-		if err == nil {
-			t.Errorf("UpdateUser() error = %v, wantErr %v", err, true)
-		}
-	})
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
-	}
-}
-
-func TestUpdateUserPassword(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	defer db.Close()
-
-	s := &service{db: db}
-	ctx := context.Background()
-
-	t.Run("Successful Update", func(t *testing.T) {
-		id := "123"
-		newPassword := "NewPassword123!"
-
-		mock.ExpectExec(`
-		update users
-		set password = \$1
-		where id = \$2
-		`).WithArgs(sqlmock.AnyArg(), id).WillReturnResult(sqlmock.NewResult(1, 1))
-
-		err := s.UpdateUserPassword(ctx, id, newPassword)
-		if err != nil {
-			t.Errorf("UpdateUserPassword() error = %v, wantErr %v", err, false)
-		}
-	})
-
-	t.Run("User Not Found", func(t *testing.T) {
-		id := "nonexistent"
-		newPassword := "NewPassword123!"
-
-		mock.ExpectExec(`
-		update users
-		set password = \$1
-		where id = \$2
-		`).WithArgs(sqlmock.AnyArg(), id).WillReturnResult(sqlmock.NewResult(1, 0))
-
-		err := s.UpdateUserPassword(ctx, id, newPassword)
-		if err == nil || err != sql.ErrNoRows {
-			t.Errorf("UpdateUserPassword() error = %v, expected %v", err, sql.ErrNoRows)
-		}
-	})
-
-	t.Run("Database Error", func(t *testing.T) {
-		id := "123"
-		newPassword := "NewPassword123!"
-
-		mock.ExpectExec(`
-		update users
-		set password = \$1
-		where id = \$2
-		`).WithArgs(sqlmock.AnyArg(), id).WillReturnError(errors.New("db error"))
-
-		err := s.UpdateUserPassword(ctx, id, newPassword)
-		if err == nil {
-			t.Errorf("UpdateUserPassword() error = %v, wantErr %v", err, true)
-		}
-	})
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
-	}
-}
-
-func TestUpdateUserStatus(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	defer db.Close()
-
-	s := &service{db: db}
-	ctx := context.Background()
-
-	t.Run("Successful Update - Activate", func(t *testing.T) {
-		id := "123"
-		isActive := true
-
-		mock.ExpectExec(`
-		update users
-		set is_active = \$1
-		where id = \$2
-		`).WithArgs(isActive, id).WillReturnResult(sqlmock.NewResult(1, 1))
-
-		err := s.UpdateUserStatus(ctx, id, isActive)
-		if err != nil {
-			t.Errorf("UpdateUserStatus() error = %v, wantErr %v", err, false)
-		}
-	})
-
-	t.Run("Successful Update - Deactivate", func(t *testing.T) {
-		id := "123"
-		isActive := false
-
-		mock.ExpectExec(`
-		update users
-		set is_active = \$1
-		where id = \$2
-		`).WithArgs(isActive, id).WillReturnResult(sqlmock.NewResult(1, 1))
-
-		err := s.UpdateUserStatus(ctx, id, isActive)
-		if err != nil {
-			t.Errorf("UpdateUserStatus() error = %v, wantErr %v", err, false)
-		}
-	})
-
-	t.Run("User Not Found", func(t *testing.T) {
-		id := "nonexistent"
-		isActive := true
-
-		mock.ExpectExec(`
-		update users
-		set is_active = \$1
-		where id = \$2
-		`).WithArgs(isActive, id).WillReturnResult(sqlmock.NewResult(1, 0))
-
-		err := s.UpdateUserStatus(ctx, id, isActive)
-		if err == nil || err != sql.ErrNoRows {
-			t.Errorf("UpdateUserStatus() error = %v, expected %v", err, sql.ErrNoRows)
-		}
-	})
-
-	t.Run("Database Error", func(t *testing.T) {
-		id := "123"
-		isActive := true
-
-		mock.ExpectExec(`
-		update users
-		set is_active = \$1
-		where id = \$2
-		`).WithArgs(isActive, id).WillReturnError(errors.New("db error"))
-
-		err := s.UpdateUserStatus(ctx, id, isActive)
-		if err == nil {
-			t.Errorf("UpdateUserStatus() error = %v, wantErr %v", err, true)
-		}
-	})
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
-	}
-}
-
-func TestDeleteUserById(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	defer db.Close()
-
-	s := &service{db: db}
-	ctx := context.Background()
-
-	t.Run("Successful Delete", func(t *testing.T) {
-		id := "123"
-
-		mock.ExpectExec(`
-		delete from users
-		where id = \$1
-		`).WithArgs(id).WillReturnResult(sqlmock.NewResult(1, 1))
-
-		err := s.DeleteUserById(ctx, id)
-		if err != nil {
-			t.Errorf("DeleteUserById() error = %v, wantErr %v", err, false)
-		}
-	})
-
-	t.Run("User Not Found", func(t *testing.T) {
-		id := "nonexistent"
-
-		mock.ExpectExec(`
-		delete from users
-		where id = \$1
-		`).WithArgs(id).WillReturnResult(sqlmock.NewResult(1, 0))
-
-		err := s.DeleteUserById(ctx, id)
-		if err == nil || err != sql.ErrNoRows {
-			t.Errorf("DeleteUserById() error = %v, expected %v", err, sql.ErrNoRows)
-		}
-	})
-
-	t.Run("Database Error", func(t *testing.T) {
-		id := "123"
-
-		mock.ExpectExec(`
-		delete from users
-		where id = \$1
-		`).WithArgs(id).WillReturnError(errors.New("db error"))
-
-		err := s.DeleteUserById(ctx, id)
-		if err == nil {
-			t.Errorf("DeleteUserById() error = %v, wantErr %v", err, true)
-		}
-	})
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
-	}
-}
+})

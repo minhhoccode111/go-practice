@@ -24,6 +24,9 @@ func UserToUserDTO(user *model.User) model.UserDTO {
 }
 
 func GenerateJWT(jwtConfig config.JWTConfig, user *model.UserDTO) (string, error) {
+	if jwtConfig.Secret == "" {
+		return "", fmt.Errorf("JWT secret cannot be empty")
+	}
 	secretKey := []byte(jwtConfig.Secret)
 	expirationTime := time.Now().Add(jwtConfig.Expiration).Unix() // Calculate future expiration
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{

@@ -35,12 +35,16 @@ docker-down:
 # Test the application
 test:
 	@echo "Testing..."
-	@go test ./... -v
+	@go install github.com/onsi/ginkgo/v2/ginkgo@latest
+	@$(GOPATH)/bin/ginkgo -r
+
 
 # Integrations Tests for the application
 itest:
 	@echo "Running integration tests..."
-	@go test ./internal/database -v
+	@go install github.com/onsi/ginkgo/v2/ginkgo@latest
+	@$(GOPATH)/bin/ginkgo -r internal/database
+
 
 # Clean the binary
 clean:

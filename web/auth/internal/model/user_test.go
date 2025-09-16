@@ -1,14 +1,20 @@
-package model
+package model_test
 
 import (
-	"testing"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	"auth/internal/model"
 )
 
-func TestRoleConstants(t *testing.T) {
-	if RoleAdmin != "admin" {
-		t.Errorf("Expected RoleAdmin to be \"admin\", got %q", RoleAdmin)
-	}
-	if RoleUser != "user" {
-		t.Errorf("Expected RoleUser to be \"user\", got %q", RoleUser)
-	}
-}
+var _ = Describe("User Model", func() {
+	Describe("Role Constants", func() {
+		It("defines RoleAdmin as \"admin\"", func() {
+			Expect(model.RoleAdmin).To(Equal(model.Role("admin")))
+		})
+
+		It("defines RoleUser as \"user\"", func() {
+			Expect(model.RoleUser).To(Equal(model.Role("user")))
+		})
+	})
+})

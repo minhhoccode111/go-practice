@@ -1,314 +1,258 @@
-package utils
+package utils_test
 
 import (
 	"auth/internal/config"
 	"auth/internal/model"
-	"fmt"
-	"testing"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	"auth/internal/utils"
 )
 
-func TestIsValidEmail(t *testing.T) {
-	tests := []struct {
-		name    string
-		email   string
-		want    string
-		wantErr bool
-	}{
-		{
-			name:    "Valid Email",
-			email:   "test@example.com",
-			want:    "test@example.com",
-			wantErr: false,
-		},
-		{
-			name:    "Email with plus sign",
-			email:   "test+alias@example.com",
-			want:    "test+alias@example.com",
-			wantErr: false,
-		},
-		{
-			name:    "Email with dot in local part",
-			email:   "first.last@example.com",
-			want:    "first.last@example.com",
-			wantErr: false,
-		},
-		{
-			name:    "Email with subdomain",
-			email:   "test@sub.example.com",
-			want:    "test@sub.example.com",
-			wantErr: false,
-		},
-		{
-			name:    "Empty Email",
-			email:   "",
-			want:    "",
-			wantErr: true,
-		},
-		{
-			name:    "Email without @",
-			email:   "testexample.com",
-			want:    "",
-			wantErr: true,
-		},
-		{
-			name:    "Email without domain",
-			email:   "test@",
-			want:    "",
-			wantErr: true,
-		},
-		{
-			name:    "Email without top-level domain",
-			email:   "test@example",
-			want:    "",
-			wantErr: true,
-		},
-		{
-			name:    "Email with invalid characters",
-			email:   "test!@example.com",
-			want:    "",
-			wantErr: true,
-		},
-		{
-			name:    "Email with leading/trailing spaces",
-			email:   "  test@example.com  ",
-			want:    "test@example.com",
-			wantErr: false,
-		},
-	}
+var _ = Describe("Helpers", func() {
+	Describe("IsValidEmail", func() {
+		Context("when the email is valid", func() {
+			It("returns the email and no error for a simple valid email", func() {
+				email := "test@example.com"
+				got, err := utils.IsValidEmail(email)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(got).To(Equal(email))
+			})
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := IsValidEmail(tt.email)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("IsValidEmail() error = %v, wantErr %v", err, tt.wantErr)
-				return
+			It("returns the email and no error for an email with a plus sign", func() {
+				email := "test+alias@example.com"
+				got, err := utils.IsValidEmail(email)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(got).To(Equal(email))
+			})
+
+			It("returns the email and no error for an email with a dot in the local part", func() {
+				email := "first.last@example.com"
+				got, err := utils.IsValidEmail(email)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(got).To(Equal(email))
+			})
+
+			It("returns the email and no error for an email with a subdomain", func() {
+				email := "test@sub.example.com"
+				got, err := utils.IsValidEmail(email)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(got).To(Equal(email))
+			})
+
+			It("trims leading/trailing spaces and returns the valid email", func() {
+				email := "  test@example.com  "
+				expectedEmail := "test@example.com"
+				got, err := utils.IsValidEmail(email)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(got).To(Equal(expectedEmail))
+			})
+		})
+
+		Context("when the email is invalid", func() {
+			It("returns an error for an empty email", func() {
+				email := ""
+				got, err := utils.IsValidEmail(email)
+				Expect(err).To(HaveOccurred())
+				Expect(got).To(BeEmpty())
+			})
+
+			It("returns an error for an email without @", func() {
+				email := "testexample.com"
+				got, err := utils.IsValidEmail(email)
+				Expect(err).To(HaveOccurred())
+				Expect(got).To(BeEmpty())
+			})
+
+			It("returns an error for an email without a domain", func() {
+				email := "test@"
+				got, err := utils.IsValidEmail(email)
+				Expect(err).To(HaveOccurred())
+				Expect(got).To(BeEmpty())
+			})
+
+			It("returns an error for an email without a top-level domain", func() {
+				email := "test@example"
+				got, err := utils.IsValidEmail(email)
+				Expect(err).To(HaveOccurred())
+				Expect(got).To(BeEmpty())
+			})
+
+			It("returns an error for an email with invalid characters", func() {
+				email := "test!@example.com"
+				got, err := utils.IsValidEmail(email)
+				Expect(err).To(HaveOccurred())
+				Expect(got).To(BeEmpty())
+			})
+		})
+	})
+
+	Describe("UserToUserDTO", func() {
+		It("correctly converts a User model to a UserDTO", func() {
+			user := &model.User{
+				Id:       "123",
+				Email:    "test@example.com",
+				IsActive: true,
+				Role:     model.RoleUser,
 			}
-			if got != tt.want {
-				t.Errorf("IsValidEmail() got = %v, want %v", got, tt.want)
+
+			dto := utils.UserToUserDTO(user)
+
+			Expect(dto.Id).To(Equal(user.Id))
+			Expect(dto.Email).To(Equal(user.Email))
+			Expect(dto.IsActive).To(Equal(user.IsActive))
+			Expect(dto.Role).To(Equal(user.Role))
+			
+		})
+	})
+
+	Describe("HashedPassword and ValidatePassword", func() {
+		var password string
+		BeforeEach(func() {
+			password = "mysecretpassword"
+		})
+
+		It("successfully hashes a password", func() {
+			hashedPassword, err := utils.HashedPassword(password)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(hashedPassword).ToNot(BeEmpty())
+		})
+
+		It("validates a correct password", func() {
+			hashedPassword, _ := utils.HashedPassword(password)
+			Expect(utils.ValidatePassword(hashedPassword, password)).To(BeTrue())
+		})
+
+		It("does not validate an incorrect password", func() {
+			hashedPassword, _ := utils.HashedPassword(password)
+			Expect(utils.ValidatePassword(hashedPassword, "wrongpassword")).To(BeFalse())
+		})
+
+		It("does not validate with an empty plain password", func() {
+			hashedPassword, _ := utils.HashedPassword(password)
+			Expect(utils.ValidatePassword(hashedPassword, "")).To(BeFalse())
+		})
+
+		It("does not validate with an empty hashed password", func() {
+			Expect(utils.ValidatePassword("", password)).To(BeFalse())
+		})
+	})
+
+	Describe("IsValidPassword", func() {
+		Context("when the password is valid", func() {
+			It("returns the password and no error for a strong password", func() {
+				password := "Password123!"
+				got, err := utils.IsValidPassword(password)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(got).To(Equal(password))
+			})
+
+			It("trims leading/trailing spaces and returns the valid password", func() {
+				password := "  Password123!  "
+				expectedPassword := "Password123!"
+				got, err := utils.IsValidPassword(password)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(got).To(Equal(expectedPassword))
+			})
+		})
+
+		Context("when the password is invalid", func() {
+			It("returns an error for a password that is too short", func() {
+				password := "Pass1!"
+				got, err := utils.IsValidPassword(password)
+				Expect(err).To(HaveOccurred())
+				Expect(got).To(BeEmpty())
+			})
+
+			It("returns an error for a password with no uppercase letter", func() {
+				password := "password123!"
+				got, err := utils.IsValidPassword(password)
+				Expect(err).To(HaveOccurred())
+				Expect(got).To(BeEmpty())
+			})
+
+			It("returns an error for a password with no lowercase letter", func() {
+				password := "PASSWORD123!"
+				got, err := utils.IsValidPassword(password)
+				Expect(err).To(HaveOccurred())
+				Expect(got).To(BeEmpty())
+			})
+
+			It("returns an error for a password with no digit", func() {
+				password := "Password!!"
+				got, err := utils.IsValidPassword(password)
+				Expect(err).To(HaveOccurred())
+				Expect(got).To(BeEmpty())
+			})
+
+			It("returns an error for a password with no special character", func() {
+				password := "Password123"
+				got, err := utils.IsValidPassword(password)
+				Expect(err).To(HaveOccurred())
+				Expect(got).To(BeEmpty())
+			})
+
+			It("returns an error for an empty password", func() {
+				password := ""
+				got, err := utils.IsValidPassword(password)
+				Expect(err).To(HaveOccurred())
+				Expect(got).To(BeEmpty())
+			})
+		})
+	})
+
+	Describe("GenerateJWT", func() {
+		var ( 
+			jwtConfig config.JWTConfig
+			userDTO   *model.UserDTO
+		)
+
+		BeforeEach(func() {
+			jwtConfig = config.JWTConfig{
+				Secret:     "supersecretjwtkey",
+				Expiration: 3600, // 1 hour
+				Issuer:     "test-issuer",
+			}
+
+			userDTO = &model.UserDTO{
+				Id:       "user123",
+				Email:    "user@example.com",
+				IsActive: true,
+				Role:     model.RoleUser,
 			}
 		})
-	}
-}
 
-func TestUserToUserDTO(t *testing.T) {
-	user := &model.User{
-		Id:       "123",
-		Email:    "test@example.com",
-		IsActive: true,
-		Role:     model.RoleUser,
-		// Password and CreatedAt/UpdatedAt are not part of DTO, so no need to set them for this test
-	}
+		It("generates a valid JWT token", func() {
+			tokenString, err := utils.GenerateJWT(jwtConfig, userDTO)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(tokenString).ToNot(BeEmpty())
 
-	dto := UserToUserDTO(user)
+			token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+				Expect(token.Method).To(BeAssignableToTypeOf(&jwt.SigningMethodHMAC{}), "Unexpected signing method")
+				return []byte(jwtConfig.Secret), nil
+			}, jwt.WithLeeway(time.Minute))
 
-	if dto.Id != user.Id {
-		t.Errorf("Expected Id %v, got %v", user.Id, dto.Id)
-	}
-	if dto.Email != user.Email {
-		t.Errorf("Expected Email %v, got %v", user.Email, dto.Email)
-	}
-	if dto.IsActive != user.IsActive {
-		t.Errorf("Expected IsActive %v, got %v", user.IsActive, dto.IsActive)
-	}
-	if dto.Role != user.Role {
-		t.Errorf("Expected Role %v, got %v", user.Role, dto.Role)
-	}
-}
+			Expect(err).ToNot(HaveOccurred())
+			Expect(token.Valid).To(BeTrue(), "Generated token should be valid")
 
-func TestHashedPassword(t *testing.T) {
-	password := "mysecretpassword"
-	hashedPassword, err := HashedPassword(password)
+			claims, ok := token.Claims.(jwt.MapClaims)
+			Expect(ok).To(BeTrue(), "Could not get claims from token")
 
-	if err != nil {
-		t.Fatalf("HashedPassword() error = %v", err)
-	}
+			Expect(claims["userId"]).To(Equal(userDTO.Id))
+			Expect(claims["iss"]).To(Equal(jwtConfig.Issuer))
 
-	if hashedPassword == "" {
-		t.Errorf("HashedPassword() returned empty string")
-	}
-
-	// Verify that the hashed password can be validated
-	if !ValidatePassword(hashedPassword, password) {
-		t.Errorf("HashedPassword() generated a password that cannot be validated")
-	}
-}
-
-func TestValidatePassword(t *testing.T) {
-	password := "mysecretpassword"
-	hashedPassword, _ := HashedPassword(password)
-
-	tests := []struct {
-		name   string
-		hashed string
-		plain  string
-		want   bool
-	}{
-		{
-			name:   "Correct Password",
-			hashed: hashedPassword,
-			plain:  password,
-			want:   true,
-		},
-		{
-			name:   "Incorrect Password",
-			hashed: hashedPassword,
-			plain:  "wrongpassword",
-			want:   false,
-		},
-		{
-			name:   "Empty Plain Password",
-			hashed: hashedPassword,
-			plain:  "",
-			want:   false,
-		},
-		{
-			name:   "Empty Hashed Password",
-			hashed: "",
-			plain:  password,
-			want:   false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := ValidatePassword(tt.hashed, tt.plain)
-			if got != tt.want {
-				t.Errorf("ValidatePassword() got = %v, want %v", got, tt.want)
-			}
+			exp := int64(claims["exp"].(float64))
+			Expect(exp).To(BeNumerically(">=", time.Now().Unix()), "Token expiration time should be in the future")
 		})
-	}
-}
 
-func TestIsValidPassword(t *testing.T) {
-	tests := []struct {
-		name     string
-		password string
-		want     string
-		wantErr  bool
-	}{
-		{
-			name:     "Valid Password",
-			password: "Password123!",
-			want:     "Password123!",
-			wantErr:  false,
-		},
-		{
-			name:     "Password with leading/trailing spaces",
-			password: "  Password123!  ",
-			want:     "Password123!",
-			wantErr:  false,
-		},
-		{
-			name:     "Too Short",
-			password: "Pass1!",
-			want:     "",
-			wantErr:  true,
-		},
-		{
-			name:     "No Uppercase",
-			password: "password123!",
-			want:     "",
-			wantErr:  true,
-		},
-		{
-			name:     "No Lowercase",
-			password: "PASSWORD123!",
-			want:     "",
-			wantErr:  true,
-		},
-		{
-			name:     "No Digit",
-			password: "Password!!",
-			want:     "",
-			wantErr:  true,
-		},
-		{
-			name:     "No Special Character",
-			password: "Password123",
-			want:     "",
-			wantErr:  true,
-		},
-		{
-			name:     "Empty Password",
-			password: "",
-			want:     "",
-			wantErr:  true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := IsValidPassword(tt.password)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("IsValidPassword() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("IsValidPassword() got = %v, want %v", got, tt.want)
-			}
+		It("returns an error if JWT secret is empty", func() {
+			jwtConfig.Secret = ""
+			tokenString, err := utils.GenerateJWT(jwtConfig, userDTO)
+			Expect(err).To(HaveOccurred())
+			Expect(tokenString).To(BeEmpty())
 		})
-	}
-}
-
-func TestGenerateJWT(t *testing.T) {
-	jwtConfig := config.JWTConfig{
-		Secret:     "supersecretjwtkey",
-		Expiration: 3600, // 1 hour
-		Issuer:     "test-issuer",
-	}
-
-	userDTO := &model.UserDTO{
-		Id:       "user123",
-		Email:    "user@example.com",
-		IsActive: true,
-		Role:     model.RoleUser,
-	}
-
-	tokenString, err := GenerateJWT(jwtConfig, userDTO)
-
-	if err != nil {
-		t.Fatalf("GenerateJWT() error = %v", err)
-	}
-
-	if tokenString == "" {
-		t.Errorf("GenerateJWT() returned empty token string")
-	}
-
-	// Parse and validate the token
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		// Check the signing method
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return []byte(jwtConfig.Secret), nil
-	}, jwt.WithLeeway(time.Minute))
-
-	if err != nil {
-		t.Fatalf("Error parsing token: %v", err)
-	}
-
-	if !token.Valid {
-		t.Errorf("Generated token is not valid")
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		t.Errorf("Could not get claims from token")
-	}
-
-	if claims["userId"] != userDTO.Id {
-		t.Errorf("Expected userId %v, got %v", userDTO.Id, claims["userId"])
-	}
-
-	if claims["iss"] != jwtConfig.Issuer {
-		t.Errorf("Expected issuer %v, got %v", jwtConfig.Issuer, claims["iss"])
-	}
-
-	exp := int64(claims["exp"].(float64))
-	if exp < time.Now().Unix() {
-		t.Errorf("Token expiration time is not in the future")
-	}
-}
+	})
+})

@@ -14,5 +14,7 @@ jobs:
 
       - name: Build
         run: go build -v ./...
-      - name: Test with the Go CLI
-        run: go test ./...
+      - name: Install Ginkgo
+        run: go install github.com/onsi/ginkgo/v2/ginkgo@latest
+      - name: Test with Ginkgo
+        run: ginkgo -r

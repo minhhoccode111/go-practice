@@ -57,21 +57,19 @@ type service struct {
 	db *sql.DB
 }
 
-var dbInstance *service
-
 func New(connStr string) Service {
-	// Reuse Connection
-	if dbInstance != nil {
-		return dbInstance
-	}
 	db, err := sql.Open("pgx", connStr)
 	if err != nil {
 		log.Fatal(err)
 	}
-	dbInstance = &service{
-		db: db,
-	}
-	return dbInstance
+	return NewService(db)
+}
+
+// NewService creates a new database service with the given *sql.DB instance.
+// This function is primarily intended for testing purposes, allowing a mock database
+// to be injected.
+func NewService(db *sql.DB) Service {
+	return &service{db: db}
 }
 
 // Health checks the health of the database connection by pinging the database.
