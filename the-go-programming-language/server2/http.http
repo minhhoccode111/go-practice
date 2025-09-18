@@ -1,0 +1,7 @@
+@url = http://localhost:9999
+
+###
+GET {{url}}/
+
+###
+GET {{url}}/count
