@@ -4,12 +4,13 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	_ "github.com/lib/pq"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	_ "github.com/lib/pq"
 )
 
 type Todo struct {
@@ -33,8 +34,35 @@ const (
 
 var db *sql.DB
 
+// CORS middleware
+func corsMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().
+			Set("Access-Control-Allow-Origin", "*")
+			// or specify your SvelteKit origin like "http://localhost:5173"
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+		// Handle preflight
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		next(w, r)
+	}
+}
+
 func main() {
-	connStr := fmt.Sprintf("host=%v port=%v user=%v password=%v dbname=%v sslmode=%v", dbHost, dbPort, dbUser, dbPassword, dbName, dbSslMode)
+	connStr := fmt.Sprintf(
+		"host=%v port=%v user=%v password=%v dbname=%v sslmode=%v",
+		dbHost,
+		dbPort,
+		dbUser,
+		dbPassword,
+		dbName,
+		dbSslMode,
+	)
 
 	var err error
 
@@ -89,9 +117,9 @@ func main() {
 		MaxHeaderBytes: maxHeaderBytes, // 1024
 	}
 
-	http.HandleFunc("/", handleIndex)
-	http.HandleFunc("/todos", handleTodos)     // get, post
-	http.HandleFunc("/todos/{id}", handleTodo) // get, put, delete
+	http.HandleFunc("/", corsMiddleware(handleIndex))
+	http.HandleFunc("/todos", corsMiddleware(handleTodos))
+	http.HandleFunc("/todos/{id}", corsMiddleware(handleTodo))
 	log.Fatal(s.ListenAndServe())
 }
 
@@ -243,7 +271,8 @@ func handleGetTodo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var todo Todo
-	err = db.QueryRow(`select id, description, is_done from todos where id = $1`, id).Scan(&todo.Id, &todo.Description, &todo.IsDone)
+	err = db.QueryRow(`select id, description, is_done from todos where id = $1`, id).
+		Scan(&todo.Id, &todo.Description, &todo.IsDone)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
