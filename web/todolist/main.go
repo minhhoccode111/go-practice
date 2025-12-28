@@ -236,7 +236,7 @@ func handlePostTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if todoDTO.Description == "" {
+	if strings.TrimSpace(todoDTO.Description) == "" {
 		http.Error(w, "Description cannot be empty", http.StatusBadRequest)
 		return
 	}
