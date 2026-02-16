@@ -1,0 +1,12 @@
+version: "2"
+cloud:
+  project: "01KHAF09PD2K9YGJX969TDY558"
+sql:
+  - engine: "postgresql"
+    queries: "query.sql"
+    schema: "schema.sql"
+    gen:
+      go:
+        package: "tutorial"
+        out: "tutorial"
+        sql_package: "pgx/v5"
