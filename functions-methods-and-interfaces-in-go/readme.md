@@ -4,23 +4,20 @@
 
 ## Function Types
 
-- [Hello World](/helloworld)
 - [Quiz 1](/quiz-1)
+- [Bubble Sort](/bubblesort)
 
-## Object Oriented in Go
+## Function Types
 
-## Intefaces for Abstraction
-
-- [Truncate](/trunc)
-- [Findian](/findian)
 - [Quiz 2](/quiz-2)
+- [Displacement Closure](/displacementclosure)
 
-## Composite Data Types
+## Object Orientation in Go
 
-- [Slice](/slice)
 - [Quiz 3](/quiz-3)
+- [Object Orientation](/objectorientation)
 
-## Protocols and Formats
+## Interfaces for abstraction
 
-- [Make JSON](/makejson)
-- [Read](/read)
+- [Quiz 4](/quiz-4)
+- [Animal Interface](/animalinterface)
