@@ -7,8 +7,8 @@
 
 ## Concurrency Basics
 
-- [Quiz 1](/quiz-1)
-- [Bubble Sort](/bubblesort)
+- [Quiz 2](/quiz-2)
+- [Race Condition](/racecondition)
 
 ## Threads in Go
 
