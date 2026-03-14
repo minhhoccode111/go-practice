@@ -12,15 +12,10 @@
 
 ## Threads in Go
 
-- [Quiz 2](/quiz-2)
-- [Displacement Closure](/displacementclosure)
+- [Quiz 3](/quiz-3)
+- [Merge Sort](/mergesort)
 
 ## Synchonized Communication
 
 - [Quiz 3](/quiz-3)
 - [Object Orientation](/objectorientation)
-
-## Interfaces for abstraction
-
-- [Quiz 4](/quiz-4)
-- [Animal Interface](/animalinterface)
