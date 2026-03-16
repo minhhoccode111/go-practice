@@ -17,5 +17,8 @@
 
 ## Synchonized Communication
 
-- [Quiz 3](/quiz-3)
+- `Sync.Once`
+- `once.Do(f)`
+
+- [Quiz 4](/quiz-4)
 - [Object Orientation](/objectorientation)
