@@ -1,0 +1,21 @@
+x-db-env: &x-db-env
+  POSTGRES_DB: "riverdemo"
+  POSTGRES_PASSWORD: "password"
+  POSTGRES_USER: "user"
+  PGDATA: "/var/lib/postgresql/data"
+
+services:
+  db:
+    container_name: db-riverdemo
+    image: postgres
+    environment:
+      <<: *x-db-env
+    volumes:
+      - riverdemo_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    mem_limit: 256Mb
+    cpus: 0.25
+
+volumes:
+  riverdemo_data:
