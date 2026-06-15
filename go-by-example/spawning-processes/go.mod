@@ -1,3 +1,3 @@
-module spawning-processes
+module spawningprocesses
 
 go 1.26.1
