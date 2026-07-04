@@ -1,0 +1,51 @@
+package web
+
+import (
+	"fmt"
+	"htmx-tailwind/internal/database"
+)
+
+templ TodoPage(todos []database.Todo) {
+	@Base() {
+		<h1 class="text-2xl font-bold mb-4">Todo List</h1>
+		<form hx-post="/todos" method="POST" hx-target="#todo-container" hx-swap="beforeend" hx-on::after-request="this.reset()">
+			<input class="bg-gray-200 text-black p-2 border border-gray-400 rounded-lg" id="title" name="title" type="text"/>
+			<button type="submit" class="bg-orange-500 hover:bg-orange-700 text-white py-2 px-4 rounded">Add</button>
+		</form>
+		<div id="todo-container">
+			for _, t := range todos {
+				@TodoItem(t)
+			}
+		</div>
+		<dialog id="todo-modal" class="p-6 rounded-lg shadow-xl backdrop:bg-gray-500/50">
+		</dialog>
+	}
+}
+
+templ TodoItem(t database.Todo) {
+	<div id={ fmt.Sprintf("todo-%d", t.ID) } class={ "todo-item p-4 shadow-md rounded-lg mt-6 flex items-center justify-between", templ.KV("bg-green-100", !t.Done), templ.KV("bg-gray-200", t.Done) }>
+		<p class={ templ.KV("line-through text-gray-500", t.Done) }>{ t.Title }</p>
+		<div class="flex gap-2">
+			<button hx-patch={ fmt.Sprintf("/todos/%d/toggle", t.ID) } hx-target="closest .todo-item" hx-swap="outerHTML" class="text-green-500 hover:text-green-700 font-bold text-lg">
+				if !t.Done {
+					✓
+				} else {
+					↩
+				}
+			</button>
+			<button hx-get={ fmt.Sprintf("/todos/%d/edit", t.ID) } hx-target="#todo-modal" hx-swap="innerHTML" hx-on::after-on-load="document.getElementById('todo-modal').showModal()" class="text-blue-500 hover:text-blue-700 text-sm font-semibold">Edit</button>
+			<button hx-delete={ fmt.Sprintf("/todos/%d", t.ID) } hx-target="closest .todo-item" hx-swap="outerHTML" class="text-red-500 hover:text-red-700 font-bold text-lg">&times;</button>
+		</div>
+	</div>
+}
+
+templ TodoEditForm(t database.Todo) {
+	<form hx-put={ fmt.Sprintf("/todos/%d", t.ID) } hx-target={ fmt.Sprintf("#todo-%d", t.ID) } hx-swap="outerHTML" hx-on::after-request="document.getElementById('todo-modal').close()" class="flex flex-col gap-4 min-w-80">
+		<h2 class="text-lg font-bold">Edit Todo</h2>
+		<input class="bg-white text-black p-2 border border-gray-400 rounded-lg" name="title" value={ t.Title } autofocus/>
+		<div class="flex gap-2 justify-end">
+			<button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded">Save</button>
+			<button type="button" hx-get={ fmt.Sprintf("/todos/%d", t.ID) } hx-target={ fmt.Sprintf("#todo-%d", t.ID) } hx-swap="outerHTML" onclick="document.getElementById('todo-modal').close()" class="bg-gray-500 hover:bg-gray-700 text-white py-2 px-4 rounded">Cancel</button>
+		</div>
+	</form>
+}

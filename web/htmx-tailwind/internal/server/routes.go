@@ -29,9 +29,28 @@ func (s *FiberServer) RegisterFiberRoutes() {
 		Browse:     false,
 	}))
 
-	s.App.Get("/web", web.HelloWebGetHandler(s.db))
+	s.App.Get("/todos", web.TodoPageHandler(s.db))
 
-	s.App.Post("/hello", web.HelloWebHandler(s.db))
+	s.App.Post("/todos", web.TodoCreateHandler(s.db))
+
+	s.App.Get("/todos/:id", web.TodoGetHandler(s.db))
+
+	s.App.Get("/todos/:id/edit", web.TodoEditGetHandler(s.db))
+
+	s.App.Put("/todos/:id", web.TodoUpdateHandler(s.db))
+
+	s.App.Patch("/todos/:id/toggle", web.ToggleTodoHandler(s.db))
+
+	s.App.Delete("/todos/:id", func(c *fiber.Ctx) error {
+		id, err := c.ParamsInt("id")
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).SendString("Invalid ID")
+		}
+		if err := s.db.DeleteTodo(int64(id)); err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Delete error")
+		}
+		return c.SendString("")
+	})
 
 }
 

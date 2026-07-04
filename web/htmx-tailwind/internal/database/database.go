@@ -19,10 +19,11 @@ import (
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
 
-// Greeting represents a greeting record in the database.
-type Greeting struct {
+// Todo represents a todo item in the database.
+type Todo struct {
 	ID        int64
-	Name      string
+	Title     string
+	Done      bool
 	CreatedAt time.Time
 }
 
@@ -39,11 +40,23 @@ type Service interface {
 	// Migrate runs any pending database migrations.
 	Migrate() error
 
-	// InsertGreeting saves a new greeting and returns it.
-	InsertGreeting(name string) (Greeting, error)
+	// CreateTodo saves a new todo and returns it.
+	CreateTodo(title string) (Todo, error)
 
-	// GetGreetings returns all greetings ordered by creation time.
-	GetGreetings() ([]Greeting, error)
+	// GetTodos returns all todos ordered by creation time.
+	GetTodos() ([]Todo, error)
+
+	// GetTodo returns a single todo by ID.
+	GetTodo(id int64) (Todo, error)
+
+	// UpdateTodo updates the title and returns the updated todo.
+	UpdateTodo(id int64, title string) (Todo, error)
+
+	// DeleteTodo removes a todo by ID.
+	DeleteTodo(id int64) error
+
+	// ToggleTodo toggles the done state and returns the updated todo.
+	ToggleTodo(id int64) (Todo, error)
 }
 
 type service struct {
@@ -125,39 +138,85 @@ func (s *service) Health() map[string]string {
 	return stats
 }
 
-// InsertGreeting saves a new greeting and returns it.
-func (s *service) InsertGreeting(name string) (Greeting, error) {
-	res, err := s.db.Exec("INSERT INTO greetings (name) VALUES (?)", name)
+// CreateTodo saves a new todo and returns it.
+func (s *service) CreateTodo(title string) (Todo, error) {
+	res, err := s.db.Exec("INSERT INTO todos (title) VALUES (?)", title)
 	if err != nil {
-		return Greeting{}, fmt.Errorf("insert greeting: %w", err)
+		return Todo{}, fmt.Errorf("create todo: %w", err)
 	}
 	id, err := res.LastInsertId()
 	if err != nil {
-		return Greeting{}, fmt.Errorf("get last insert id: %w", err)
+		return Todo{}, fmt.Errorf("get last insert id: %w", err)
 	}
-	return Greeting{ID: id, Name: name, CreatedAt: time.Now()}, nil
+	return Todo{ID: id, Title: title, Done: false, CreatedAt: time.Now()}, nil
 }
 
-// GetGreetings returns all greetings ordered by creation time.
-func (s *service) GetGreetings() ([]Greeting, error) {
-	rows, err := s.db.Query("SELECT id, name, created_at FROM greetings ORDER BY created_at ASC")
+// GetTodos returns all todos ordered by creation time.
+func (s *service) GetTodos() ([]Todo, error) {
+	rows, err := s.db.Query("SELECT id, title, done, created_at FROM todos ORDER BY created_at ASC")
 	if err != nil {
-		return nil, fmt.Errorf("query greetings: %w", err)
+		return nil, fmt.Errorf("query todos: %w", err)
 	}
 	defer rows.Close()
 
-	var greetings []Greeting
+	var todos []Todo
 	for rows.Next() {
-		var g Greeting
-		if err := rows.Scan(&g.ID, &g.Name, &g.CreatedAt); err != nil {
-			return nil, fmt.Errorf("scan greeting: %w", err)
+		var t Todo
+		if err := rows.Scan(&t.ID, &t.Title, &t.Done, &t.CreatedAt); err != nil {
+			return nil, fmt.Errorf("scan todo: %w", err)
 		}
-		greetings = append(greetings, g)
+		todos = append(todos, t)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("rows iteration: %w", err)
 	}
-	return greetings, nil
+	return todos, nil
+}
+
+// GetTodo returns a single todo by ID.
+func (s *service) GetTodo(id int64) (Todo, error) {
+	var t Todo
+	err := s.db.QueryRow("SELECT id, title, done, created_at FROM todos WHERE id = ?", id).
+		Scan(&t.ID, &t.Title, &t.Done, &t.CreatedAt)
+	if err != nil {
+		return Todo{}, fmt.Errorf("get todo: %w", err)
+	}
+	return t, nil
+}
+
+// UpdateTodo updates the title and returns the updated todo.
+func (s *service) UpdateTodo(id int64, title string) (Todo, error) {
+	_, err := s.db.Exec("UPDATE todos SET title = ? WHERE id = ?", title, id)
+	if err != nil {
+		return Todo{}, fmt.Errorf("update todo: %w", err)
+	}
+	return s.GetTodo(id)
+}
+
+// DeleteTodo removes a todo by ID.
+func (s *service) DeleteTodo(id int64) error {
+	_, err := s.db.Exec("DELETE FROM todos WHERE id = ?", id)
+	if err != nil {
+		return fmt.Errorf("delete todo: %w", err)
+	}
+	return nil
+}
+
+// ToggleTodo toggles the done state of a todo and returns the updated todo.
+func (s *service) ToggleTodo(id int64) (Todo, error) {
+	var t Todo
+	err := s.db.QueryRow("SELECT id, title, done, created_at FROM todos WHERE id = ?", id).
+		Scan(&t.ID, &t.Title, &t.Done, &t.CreatedAt)
+	if err != nil {
+		return Todo{}, fmt.Errorf("get todo for toggle: %w", err)
+	}
+
+	_, err = s.db.Exec("UPDATE todos SET done = ? WHERE id = ?", !t.Done, id)
+	if err != nil {
+		return Todo{}, fmt.Errorf("toggle todo: %w", err)
+	}
+	t.Done = !t.Done
+	return t, nil
 }
 
 // Close closes the database connection.
@@ -194,7 +253,8 @@ func (s *service) Migrate() error {
 
 	for _, f := range files {
 		var applied int
-		err := s.db.QueryRow("SELECT COUNT(*) FROM schema_migrations WHERE filename = ?", f).Scan(&applied)
+		err := s.db.QueryRow("SELECT COUNT(*) FROM schema_migrations WHERE filename = ?", f).
+			Scan(&applied)
 		if err != nil {
 			return fmt.Errorf("check migration %s: %w", f, err)
 		}
