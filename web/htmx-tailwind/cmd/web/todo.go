@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"log"
 	"strconv"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 
@@ -47,7 +48,7 @@ func TodoEditGetHandler(db database.Service) fiber.Handler {
 			return c.Status(fiber.StatusNotFound).SendString("Not found")
 		}
 
-		component := TodoEditForm(t)
+		component := TodoEditForm(t, "")
 		buf := new(bytes.Buffer)
 		err = component.Render(c.Context(), buf)
 		if err != nil {
@@ -65,11 +66,22 @@ func TodoUpdateHandler(db database.Service) fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).SendString("Invalid ID")
 		}
 
-		if err := c.BodyParser(c); err != nil {
-			return c.Status(fiber.StatusBadRequest).SendString("Bad Request")
-		}
+		title := strings.TrimSpace(c.FormValue("title"))
 
-		title := c.FormValue("title")
+		if title == "" {
+			t, err := db.GetTodo(id)
+			if err != nil {
+				return c.Status(fiber.StatusNotFound).SendString("Not found")
+			}
+			c.Set("HX-Retarget", "#todo-modal")
+			component := TodoEditForm(t, "Title is required")
+			buf := new(bytes.Buffer)
+			err = component.Render(c.Context(), buf)
+			if err != nil {
+				return c.Status(fiber.StatusInternalServerError).SendString("Render error")
+			}
+			return c.Status(fiber.StatusUnprocessableEntity).SendString(buf.String())
+		}
 
 		t, err := db.UpdateTodo(id, title)
 		if err != nil {
@@ -114,15 +126,17 @@ func ToggleTodoHandler(db database.Service) fiber.Handler {
 
 func TodoCreateHandler(db database.Service) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		if err := c.BodyParser(c); err != nil {
-			return c.Status(fiber.StatusBadRequest).SendString("Bad Request")
-		}
+		title := strings.TrimSpace(c.FormValue("title"))
 
-		title := c.FormValue("title")
+		if title == "" {
+			c.Set("HX-Retarget", "#todo-error")
+			return c.Status(fiber.StatusUnprocessableEntity).SendString("Title is required")
+		}
 
 		t, err := db.CreateTodo(title)
 		if err != nil {
 			log.Printf("Error saving todo: %v", err)
+			return c.Status(fiber.StatusInternalServerError).SendString("Error saving todo")
 		}
 
 		component := TodoItem(t)

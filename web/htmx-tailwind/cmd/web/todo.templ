@@ -8,7 +8,8 @@ import (
 templ TodoPage(todos []database.Todo) {
 	@Base() {
 		<h1 class="text-2xl font-bold mb-4">Todo List</h1>
-		<form hx-post="/todos" method="POST" hx-target="#todo-container" hx-swap="beforeend" hx-on::after-request="this.reset()">
+		<div id="todo-error" class="text-red-500 text-sm mb-2"></div>
+		<form hx-post="/todos" method="POST" hx-target="#todo-container" hx-swap="beforeend" hx-on::after-request="if(event.detail.successful) this.reset()">
 			<input class="bg-gray-200 text-black p-2 border border-gray-400 rounded-lg" id="title" name="title" type="text"/>
 			<button type="submit" class="bg-orange-500 hover:bg-orange-700 text-white py-2 px-4 rounded">Add</button>
 		</form>
@@ -17,8 +18,7 @@ templ TodoPage(todos []database.Todo) {
 				@TodoItem(t)
 			}
 		</div>
-		<dialog id="todo-modal" class="p-6 rounded-lg shadow-xl backdrop:bg-gray-500/50">
-		</dialog>
+		<dialog id="todo-modal" class="fixed inset-0 m-auto p-6 rounded-lg shadow-xl backdrop:bg-gray-500/50"></dialog>
 	}
 }
 
@@ -39,13 +39,12 @@ templ TodoItem(t database.Todo) {
 	</div>
 }
 
-templ TodoEditForm(t database.Todo) {
-	<form hx-put={ fmt.Sprintf("/todos/%d", t.ID) } hx-target={ fmt.Sprintf("#todo-%d", t.ID) } hx-swap="outerHTML" hx-on::after-request="document.getElementById('todo-modal').close()" class="flex flex-col gap-4 min-w-80">
+templ TodoEditForm(t database.Todo, err string) {
+	<form hx-put={ fmt.Sprintf("/todos/%d", t.ID) } hx-target={ fmt.Sprintf("#todo-%d", t.ID) } hx-swap="outerHTML" hx-on::after-request="if(event.detail.successful) document.getElementById('todo-modal').close()" class="flex flex-col gap-4 min-w-80">
 		<h2 class="text-lg font-bold">Edit Todo</h2>
+		if err != "" {
+			<p class="text-red-500 text-sm">{ err }</p>
+		}
 		<input class="bg-white text-black p-2 border border-gray-400 rounded-lg" name="title" value={ t.Title } autofocus/>
 		<div class="flex gap-2 justify-end">
 			<button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded">Save</button>
-			<button type="button" hx-get={ fmt.Sprintf("/todos/%d", t.ID) } hx-target={ fmt.Sprintf("#todo-%d", t.ID) } hx-swap="outerHTML" onclick="document.getElementById('todo-modal').close()" class="bg-gray-500 hover:bg-gray-700 text-white py-2 px-4 rounded">Cancel</button>
-		</div>
-	</form>
-}
