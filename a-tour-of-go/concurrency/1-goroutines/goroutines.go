@@ -45,7 +45,7 @@ func main() {
 }
 
 func say(s string) {
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		time.Sleep(100 * time.Millisecond)
 		fmt.Println(s)
 	}

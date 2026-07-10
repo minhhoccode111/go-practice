@@ -11,22 +11,14 @@ chooses one at random if multiple are ready.
 import "fmt"
 
 func main() {
-	// make a channel `c` to send and receive int from goroutine Fibonacci
 	c := make(chan int)
-	// make a channel `quit` to send signal when to stop the program
-	quit := make(chan int)
-
-	// anonymous goroutine to receive and print out 10 numbers of Fibonacci
-	// from channel `c`
+	quit := make(chan struct{})
 	go func() {
-		for i := 0; i < 10; i++ {
-			fmt.Println(<-c) // receive value from channel `c` and print out
+		for range 10 {
+			fmt.Println(<-c)
 		}
-		quit <- 0 // after receiving 10 numbers, send a signal to channel `quit`
+		close(quit)
 	}()
-
-	// call func `fibonacci` to initialize and send fibonacci sequence to
-	// channel `c`
 	fibonacci(c, quit)
 	/*
 		0
@@ -43,13 +35,13 @@ func main() {
 	*/
 }
 
-func fibonacci(c chan int, quit chan int) {
-	x, y := 0, 1 // init 2 starting numbers of the fibonacci sequence
+func fibonacci(c chan int, quit chan struct{}) {
+	x, y := 0, 1
 	for {
 		select {
-		case c <- x: // send current fibonacci number to channel `c`
-			x, y = y, x+y // update the next fibonacci number
-		case <-quit: // when receive signal from channel `quit` stop the program
+		case c <- x:
+			x, y = y, x+y
+		case <-quit:
 			fmt.Println("quit")
 			return
 		}

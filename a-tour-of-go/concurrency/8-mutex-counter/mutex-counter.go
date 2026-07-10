@@ -37,21 +37,21 @@ type SafeCounter struct {
 
 // Inc increments the counter for the given key
 func (c *SafeCounter) Inc(key string) {
-	(*c).mu.Lock()         // lock the mutex to ensure exclusive access
-	defer (*c).mu.Unlock() // ensure the mutex is unlocked after modification
-	(*c).v[key]++          // increase the value for the key
+	c.mu.Lock()         // lock the mutex to ensure exclusive access
+	defer c.mu.Unlock() // ensure the mutex is unlocked after modification
+	c.v[key]++          // increase the value for the key
 }
 
 // Value returns the current value of the counter for the given key
 func (c *SafeCounter) Value(key string) int {
-	(*c).mu.Lock()         // lock the mutex before reading
-	defer (*c).mu.Unlock() // ensure the mutex is unlocked when the function returns
-	return (*c).v[key]     // return the value for the key
+	c.mu.Lock()         // lock the mutex before reading
+	defer c.mu.Unlock() // ensure the mutex is unlocked when the function returns
+	return c.v[key]     // return the value for the key
 }
 
 func main() {
 	c := SafeCounter{v: make(map[string]int)} // initialize SafeCounter with an empty map
-	for i := 0; i < 1000; i++ {               // start 1000 goroutines
+	for range 1000 {                          // start 1000 goroutines
 		go c.Inc("somekey") // to increment "somekey" concurrently
 	}
 	time.Sleep(time.Second)         // wait for goroutines to finish
