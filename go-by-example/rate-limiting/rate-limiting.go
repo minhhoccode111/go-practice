@@ -15,9 +15,9 @@ func main() {
 	}
 	close(requests)
 
-	limiter := time.NewTicker(200 * time.Millisecond)
+	limiter := time.Tick(200 * time.Millisecond)
 	for req := range requests {
-		t := <-limiter.C
+		t := <-limiter
 		fmt.Println("request:", req, "time:", t)
 	}
 
