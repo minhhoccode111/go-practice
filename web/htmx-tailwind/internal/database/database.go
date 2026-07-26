@@ -19,14 +19,6 @@ import (
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
 
-// Todo represents a todo item in the database.
-type Todo struct {
-	ID        int64
-	Title     string
-	Done      bool
-	CreatedAt time.Time
-}
-
 // Service represents a service that interacts with a database.
 type Service interface {
 	// Health returns a map of health status information.
