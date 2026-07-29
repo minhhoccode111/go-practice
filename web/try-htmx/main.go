@@ -66,9 +66,13 @@ func main() {
 		render.Render(
 			r.Context(),
 			w,
-			components.Hello("Home"),
+			layout.App(
+				layout.AppData{PageTitle: "Home"},
+				components.Hello("World"),
+			),
 		)
 	})
+
 	r.Get("/hello", func(w http.ResponseWriter, r *http.Request) {
 		render.Render(
 			r.Context(),
@@ -80,5 +84,7 @@ func main() {
 		)
 	})
 
-	http.ListenAndServe(":"+c.Port, r)
+	if err := http.ListenAndServe(":"+c.Port, r); err != nil {
+		panic(err)
+	}
 }

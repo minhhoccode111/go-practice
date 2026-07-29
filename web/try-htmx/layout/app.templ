@@ -11,10 +11,16 @@ templ App(data AppData, content templ.Component) {
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<title>{ data.PageTitle }</title>
+			<link href="/assets/css/output.css" rel="stylesheet"/>
+			<script defer src="/assets/js/htmx.min.js"></script>
+			<script defer src="/assets/js/alpine.min.js"></script>
 		</head>
 		<body>
-			@content
-			<script src="/assets/js/htmx.min.js"></script>
+			<header class=""></header>
+			<main class="">
+				@content
+			</main>
+			<footer class=""></footer>
 		</body>
 	</html>
 }
