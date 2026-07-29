@@ -1,9 +1,8 @@
 package server
 
 import (
-	"net/http"
-
 	"htmx-tailwind/cmd/web"
+	"net/http"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -52,6 +51,7 @@ func (s *FiberServer) RegisterFiberRoutes() {
 		}
 		return c.SendString("")
 	})
+
 }
 
 func (s *FiberServer) HelloWorldHandler(c *fiber.Ctx) error {

@@ -8,7 +8,7 @@ package components
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-func Header() templ.Component {
+func Counter() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -29,7 +29,7 @@ func Header() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<nav class=\"navbar bg-base-100 shadow-sm sticky top-0 z-50 border-b border-base-300\"><div class=\"navbar-start\"><a href=\"/\" class=\"btn btn-ghost text-xl tracking-tight font-mono\" hx-get=\"/\" hx-target=\"#main\" hx-push-url=\"true\"><span class=\"text-[#3fb950]\">&gt;</span> try-htmx</a></div><div class=\"navbar-end\"><label for=\"mobile-drawer\" aria-label=\"open sidebar\" class=\"btn btn-ghost md:hidden drawer-button\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M4 6h16M4 12h8m-8 6h16\"></path></svg></label><div class=\"hidden md:flex\"><ul class=\"menu menu-horizontal px-1\"><li><a href=\"/\" hx-get=\"/\" hx-target=\"#main\" hx-push-url=\"true\" class=\"font-mono\">Home</a></li><li><a href=\"/hello\" hx-get=\"/hello\" hx-target=\"#main\" hx-push-url=\"true\" class=\"font-mono\">Hello</a></li><li><a href=\"/counter\" hx-get=\"/counter\" hx-target=\"#main\" hx-push-url=\"true\" class=\"font-mono\">Counter</a></li></ul></div></div></nav>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<button x-data=\"{count: 0}\" x-text=\"count\" x-on:click=\"count++\" class=\"btn btn-primary\"></button>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

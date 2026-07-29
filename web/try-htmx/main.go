@@ -8,6 +8,8 @@ import (
 	"try-htmx/layout"
 	renderer "try-htmx/templrender"
 
+	"github.com/a-h/templ"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"gorm.io/driver/sqlite"
@@ -63,9 +65,10 @@ func main() {
 
 	// handlers
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		content := components.Hello("Home")
 		if r.Header.Get("HX-Request") == "true" {
-			renderer.Render(r.Context(), w, content)
+			renderer.Render(r.Context(), w,
+				templ.Join(layout.PageTitle("Home"), nil),
+			)
 			return
 		}
 
@@ -74,7 +77,7 @@ func main() {
 			w,
 			layout.App(
 				layout.AppData{PageTitle: "Home"},
-				content,
+				nil,
 			),
 		)
 	})
@@ -82,7 +85,9 @@ func main() {
 	r.Get("/hello", func(w http.ResponseWriter, r *http.Request) {
 		content := components.Hello("World")
 		if r.Header.Get("HX-Request") == "true" {
-			renderer.Render(r.Context(), w, content)
+			renderer.Render(r.Context(), w,
+				templ.Join(layout.PageTitle("Hello"), content),
+			)
 			return
 		}
 
@@ -91,6 +96,24 @@ func main() {
 			w,
 			layout.App(
 				layout.AppData{PageTitle: "Hello"},
+				content,
+			),
+		)
+	})
+
+	r.Get("/counter", func(w http.ResponseWriter, r *http.Request) {
+		content := components.Counter()
+		if r.Header.Get("HX-Request") == "true" {
+			renderer.Render(r.Context(), w,
+				templ.Join(layout.PageTitle("Counter"), content))
+			return
+		}
+
+		renderer.Render(
+			r.Context(),
+			w,
+			layout.App(
+				layout.AppData{PageTitle: "Counter"},
 				content,
 			),
 		)

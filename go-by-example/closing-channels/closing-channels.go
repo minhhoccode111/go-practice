@@ -1,8 +1,6 @@
 package main
 
-import (
-	"fmt"
-)
+import "fmt"
 
 // problem: create jobs, done channels
 // spawn a goroutine to received and print the value until the jobs channel is closed
@@ -13,11 +11,16 @@ func main() {
 	done := make(chan bool) // should this be buffered?
 
 	go func() {
-		for j := range jobs {
-			fmt.Println("received job: ", j)
+		for {
+			j, more := <-jobs
+			if more {
+				fmt.Println("received job:", j)
+			} else {
+				fmt.Println("received all jobs")
+				done <- true
+				return
+			}
 		}
-		fmt.Println("received all jobs")
-		done <- true
 	}()
 
 	for i := range 3 {
