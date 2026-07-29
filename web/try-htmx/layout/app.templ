@@ -1,26 +1,40 @@
 package layout
 
+import "try-htmx/components"
+
 type AppData struct {
 	PageTitle string
 }
 
 templ App(data AppData, content templ.Component) {
 	<!DOCTYPE html>
-	<html lang="en">
+	<html lang="en" data-theme="dark">
 		<head>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-			<title>{ data.PageTitle }</title>
+			<title>{ data.PageTitle } &mdash; try-htmx</title>
 			<link href="/assets/css/output.css" rel="stylesheet"/>
 			<script defer src="/assets/js/htmx.min.js"></script>
 			<script defer src="/assets/js/alpine.min.js"></script>
 		</head>
 		<body>
-			<header class=""></header>
-			<main class="">
-				@content
-			</main>
-			<footer class=""></footer>
+			<div class="drawer drawer-end">
+				<input id="mobile-drawer" type="checkbox" class="drawer-toggle lg:hidden"/>
+				<div class="drawer-content flex flex-col min-h-screen">
+					@components.Header()
+					<main id="main" class="flex-1">
+						@content
+					</main>
+					@components.Footer()
+				</div>
+				<div class="drawer-side z-60">
+					<label for="mobile-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
+					<ul class="menu bg-base-200 min-h-full w-80 p-4">
+						<li><a href="/" hx-get="/" hx-target="#main" hx-push-url="true">Home</a></li>
+						<li><a href="/hello" hx-get="/hello" hx-target="#main" hx-push-url="true">Hello</a></li>
+					</ul>
+				</div>
+			</div>
 		</body>
 	</html>
 }

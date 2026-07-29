@@ -6,7 +6,7 @@ import (
 
 	"try-htmx/components"
 	"try-htmx/layout"
-	render "try-htmx/templrender"
+	renderer "try-htmx/templrender"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -63,23 +63,35 @@ func main() {
 
 	// handlers
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		render.Render(
+		content := components.Hello("Home")
+		if r.Header.Get("HX-Request") == "true" {
+			renderer.Render(r.Context(), w, content)
+			return
+		}
+
+		renderer.Render(
 			r.Context(),
 			w,
 			layout.App(
 				layout.AppData{PageTitle: "Home"},
-				components.Hello("World"),
+				content,
 			),
 		)
 	})
 
 	r.Get("/hello", func(w http.ResponseWriter, r *http.Request) {
-		render.Render(
+		content := components.Hello("World")
+		if r.Header.Get("HX-Request") == "true" {
+			renderer.Render(r.Context(), w, content)
+			return
+		}
+
+		renderer.Render(
 			r.Context(),
 			w,
 			layout.App(
 				layout.AppData{PageTitle: "Hello"},
-				components.Hello("World"),
+				content,
 			),
 		)
 	})
