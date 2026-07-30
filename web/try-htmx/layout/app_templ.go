@@ -114,7 +114,7 @@ func App(data AppData, content templ.Component) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</div><div class=\"drawer-side z-60\"><label for=\"mobile-drawer\" aria-label=\"close sidebar\" class=\"drawer-overlay\"></label><ul class=\"menu bg-base-200 min-h-full w-80 p-4\"><li><a href=\"/\" hx-get=\"/\" hx-target=\"#main\" hx-push-url=\"true\">Home</a></li><li><a href=\"/hello\" hx-get=\"/hello\" hx-target=\"#main\" hx-push-url=\"true\">Hello</a></li><li><a href=\"/counter\" hx-get=\"/counter\" hx-target=\"#main\" hx-push-url=\"true\">Counter</a></li></ul></div></div></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</div><div class=\"drawer-side z-60\"><label for=\"mobile-drawer\" aria-label=\"close sidebar\" class=\"drawer-overlay\"></label><ul class=\"menu bg-base-200 min-h-full w-80 p-4\"><li><a href=\"/\" hx-get=\"/\" hx-target=\"#main\" hx-push-url=\"true\">Home</a></li><li><a href=\"/hello\" hx-get=\"/hello\" hx-target=\"#main\" hx-push-url=\"true\">Hello</a></li><li><a href=\"/counter\" hx-get=\"/counter\" hx-target=\"#main\" hx-push-url=\"true\">Counter</a></li><li><a href=\"/todos\" hx-get=\"/todos\" hx-target=\"#main\" hx-push-url=\"true\">Todos</a></li></ul></div></div></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

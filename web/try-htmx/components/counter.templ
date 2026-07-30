@@ -1,5 +1,9 @@
 package components
 
-templ Counter() {
-	<button x-data="{count: 0}" x-text="count" x-on:click="count++" class="btn btn-primary"></button>
+templ Counter(c int) {
+	<div class="flex items-center gap-4 justify-center">
+		<button hx-put="/htmx/dec" hx-target="#counter" class="btn btn-xs btn-secondary">-</button>
+		<button id="counter" hx-put="/htmx/reset" class="btn btn-xs btn-neutral">{ c }</button>
+		<button hx-put="/htmx/inc" hx-target="#counter" class="btn btn-xs btn-primary">+</button>
+	</div>
 }

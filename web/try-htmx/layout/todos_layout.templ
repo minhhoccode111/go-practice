@@ -1,0 +1,15 @@
+package layout
+
+templ TodosLayout() {
+	<div class="mx-auto max-w-md space-y-2">
+		<h2 class="text-lg font-bold">Todos</h2>
+		<form hx-post="/htmx/todos" class="flex items-center justify-between gap-2">
+			<input type="text" placeholder="Add todo" class="input w-full"/>
+			<button class="btn btn-primary">submit</button>
+		</form>
+		<div hx-get="/htmx/todos" class="">
+			// for i, v := range todos {
+			// }
+		</div>
+	</div>
+}
