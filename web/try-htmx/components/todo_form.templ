@@ -1,0 +1,20 @@
+package components
+
+templ TodoForm(errors []string) {
+	<form id="todo-form" hx-post="/htmx/todos" hx-target="#todos" hx-swap="beforeend" hx-swap-oob="true" class="flex items-center justify-between gap-2">
+		<input
+			id="title"
+			name="title"
+			type="text"
+			placeholder="Add todo"
+			class="input w-full"
+			required
+			minlength="1"
+			maxlength="255"
+		/>
+		<button class="btn btn-primary">submit</button>
+	</form>
+	<div id="form-errors" hx-swap-oob="true" class="text-red-500 text-xs font-bold">
+		@Errors(errors)
+	</div>
+}

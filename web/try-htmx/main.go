@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"try-htmx/components"
 	"try-htmx/entity"
@@ -110,6 +111,10 @@ func main() {
 
 	// todos -------------------------------------------------------------------
 
+	todos := []entity.Todo{
+		{Title: "tai vi sao", IsDone: false},
+	}
+
 	r.Get("/todos", func(w http.ResponseWriter, r *http.Request) {
 		content := layout.TodosLayout()
 		if r.Header.Get("HX-Request") == "true" {
@@ -121,9 +126,25 @@ func main() {
 	})
 
 	r.Post("/htmx/todos", func(w http.ResponseWriter, r *http.Request) {
+		title := strings.TrimSpace(r.FormValue("title"))
+		if len(title) < 1 || len(title) > 255 {
+			renderer.Render(r.Context(), w, components.TodoForm(
+				[]string{
+					"title must be greater than 1 and less than 255",
+				},
+			))
+			return
+		}
+		todo := entity.Todo{
+			Title: title,
+		}
+		todos = append(todos, todo)
+
+		renderer.Render(r.Context(), w, templ.Join(components.Todo(todo), components.TodoForm(nil)))
 	})
 
 	r.Get("/htmx/todos", func(w http.ResponseWriter, r *http.Request) {
+		renderer.Render(r.Context(), w, components.Todos(todos))
 	})
 
 	if err := http.ListenAndServe(":"+c.Port, r); err != nil {

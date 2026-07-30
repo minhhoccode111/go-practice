@@ -1,5 +1,9 @@
 package components
 
-templ Todos() {
-	<div class=""></div>
+import "try-htmx/entity"
+
+templ Todos(todos []entity.Todo) {
+	for _, v := range todos {
+		@Todo(v)
+	}
 }

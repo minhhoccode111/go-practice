@@ -1,0 +1,9 @@
+package components
+
+templ Errors(s []string) {
+	<ul id="form-errors-list" class="list-disc list-inside">
+		for _, v := range s {
+			<li>{ v }</li>
+		}
+	</ul>
+}

@@ -1,0 +1,11 @@
+package components
+
+import "try-htmx/entity"
+
+templ Todo(todo entity.Todo) {
+	if todo.IsDone {
+		<li class="list-row line-through">{ todo.Title } </li>
+	} else {
+		<li class="list-row">{ todo.Title } </li>
+	}
+}
