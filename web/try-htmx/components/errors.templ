@@ -1,7 +1,7 @@
 package components
 
 templ Errors(s []string) {
-	<ul id="form-errors-list" class="list-disc list-inside">
+	<ul id="form-errors-list" class="list-inside list-disc">
 		for _, v := range s {
 			<li>{ v }</li>
 		}

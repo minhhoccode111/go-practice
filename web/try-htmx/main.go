@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"try-htmx/components"
 	"try-htmx/entity"
@@ -37,6 +38,27 @@ func loadConfig() Config {
 		Port: port,
 		DB:   db,
 	}
+}
+
+func parseTodoID(r *http.Request) (uint, bool) {
+	u, err := strconv.ParseUint(chi.URLParam(r, "todoID"), 10, 64)
+	if err != nil {
+		return 0, false
+	}
+	return uint(u), true
+}
+
+func getTodo(todos []entity.Todo, r *http.Request) (*entity.Todo, bool) {
+	id, ok := parseTodoID(r)
+	if !ok {
+		return nil, false
+	}
+	for i := range todos {
+		if todos[i].ID == id {
+			return &todos[i], true
+		}
+	}
+	return nil, false
 }
 
 func main() {
@@ -111,11 +133,14 @@ func main() {
 
 	// todos -------------------------------------------------------------------
 
-	todos := []entity.Todo{
-		{Title: "tai vi sao", IsDone: false},
-	}
+	var todos []entity.Todo
+	var nextID uint = 1
+
+	// ponytail: in-memory slice + manual IDs; swap for gorm DB when
+	// persistence is needed. Not goroutine-safe — single-user learning app.
 
 	r.Get("/todos", func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(1 * time.Second)
 		content := layout.TodosLayout()
 		if r.Header.Get("HX-Request") == "true" {
 			renderer.Render(r.Context(), w, templ.Join(layout.PageTitle("Todos"), content))
@@ -125,26 +150,93 @@ func main() {
 		renderer.Render(r.Context(), w, layout.App(layout.AppData{PageTitle: "Todos"}, content))
 	})
 
+	r.Get("/htmx/todos", func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(1 * time.Second)
+		renderer.Render(r.Context(), w, components.Todos(todos))
+	})
+
 	r.Post("/htmx/todos", func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(1 * time.Second)
 		title := strings.TrimSpace(r.FormValue("title"))
 		if len(title) < 1 || len(title) > 255 {
-			renderer.Render(r.Context(), w, components.TodoForm(
-				[]string{
-					"title must be greater than 1 and less than 255",
-				},
+			renderer.Render(r.Context(), w, components.FormErrors(
+				[]string{"Title must be 1-255 characters"},
 			))
 			return
 		}
 		todo := entity.Todo{
-			Title: title,
+			Model:  gorm.Model{ID: nextID},
+			Title:  title,
+			IsDone: false,
 		}
+		nextID++
 		todos = append(todos, todo)
-
-		renderer.Render(r.Context(), w, templ.Join(components.Todo(todo), components.TodoForm(nil)))
+		renderer.Render(r.Context(), w, templ.Join(components.Todo(todo), components.FormErrors(nil)))
 	})
 
-	r.Get("/htmx/todos", func(w http.ResponseWriter, r *http.Request) {
-		renderer.Render(r.Context(), w, components.Todos(todos))
+	r.Get("/htmx/{todoID}", func(w http.ResponseWriter, r *http.Request) {
+		todo, ok := getTodo(todos, r)
+		if !ok {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		renderer.Render(r.Context(), w, templ.Join(components.Todo(*todo), components.FormErrors(nil)))
+	})
+
+	r.Get("/htmx/{todoID}/edit", func(w http.ResponseWriter, r *http.Request) {
+		todo, ok := getTodo(todos, r)
+		if !ok {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		renderer.Render(r.Context(), w, components.TodoEditForm(*todo))
+	})
+
+	r.Put("/htmx/{todoID}", func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(1 * time.Second)
+		todo, ok := getTodo(todos, r)
+		if !ok {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		title := strings.TrimSpace(r.FormValue("title"))
+		if len(title) < 1 || len(title) > 255 {
+			renderer.Render(r.Context(), w, templ.Join(
+				components.TodoEditForm(*todo),
+				components.FormErrors([]string{"Title must be 1-255 characters"}),
+			))
+			return
+		}
+		todo.Title = title
+		renderer.Render(r.Context(), w, templ.Join(components.Todo(*todo), components.FormErrors(nil)))
+	})
+
+	r.Patch("/htmx/{todoID}/toggle", func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(1 * time.Second)
+		todo, ok := getTodo(todos, r)
+		if !ok {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		todo.IsDone = !todo.IsDone
+		renderer.Render(r.Context(), w, templ.Join(components.Todo(*todo), components.FormErrors(nil)))
+	})
+
+	r.Delete("/htmx/{todoID}", func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(1 * time.Second)
+		id, ok := parseTodoID(r)
+		if !ok {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		for i := range todos {
+			if todos[i].ID == id {
+				todos = append(todos[:i], todos[i+1:]...)
+				renderer.Render(r.Context(), w, components.Todos(todos))
+				return
+			}
+		}
+		w.WriteHeader(http.StatusNotFound)
 	})
 
 	if err := http.ListenAndServe(":"+c.Port, r); err != nil {

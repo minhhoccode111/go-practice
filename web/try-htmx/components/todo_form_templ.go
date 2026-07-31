@@ -29,7 +29,40 @@ func TodoForm(errors []string) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<form id=\"todo-form\" hx-post=\"/htmx/todos\" hx-target=\"#todos\" hx-swap=\"beforeend\" hx-swap-oob=\"true\" class=\"flex items-center justify-between gap-2\"><input id=\"title\" name=\"title\" type=\"text\" placeholder=\"Add todo\" class=\"input w-full\" required minlength=\"1\" maxlength=\"255\"> <button class=\"btn btn-primary\">submit</button></form><div id=\"form-errors\" hx-swap-oob=\"true\" class=\"text-red-500 text-xs font-bold\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<form id=\"todo-form\" hx-post=\"/htmx/todos\" hx-target=\"#todos-list\" hx-swap=\"beforeend\" hx-indicator=\"this\" hx-disabled-elt=\"find button\" hx-on::after-request=\"if(event.detail.successful && !document.getElementById('form-errors').textContent.trim()) this.reset()\" hx-on::response-error=\"document.getElementById('form-errors').textContent = 'Something went wrong'\" hx-on::send-error=\"document.getElementById('form-errors').textContent = 'Something went wrong'\" class=\"flex items-center justify-between gap-2\"><input id=\"title\" name=\"title\" type=\"text\" placeholder=\"Add todo\" class=\"input w-full\" required minlength=\"1\" maxlength=\"255\" aria-label=\"New todo title\"> <button class=\"btn btn-primary\"><span class=\"htmx-indicator loading loading-spinner loading-xs\"></span> submit</button></form>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = FormErrors(errors).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+func FormErrors(errors []string) templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var2 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var2 == nil {
+			templ_7745c5c3_Var2 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div id=\"form-errors\" hx-swap-oob=\"true\" class=\"text-xs font-bold text-red-500\" role=\"alert\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -37,7 +70,7 @@ func TodoForm(errors []string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -35,11 +35,11 @@ func TodosLayout() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = components.TodoForm().Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.TodoForm(nil).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div id=\"todos\" hx-get=\"/htmx/todos\" hx-trigger=\"load\" class=\"list\"></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div id=\"todos-loading\" class=\"htmx-indicator text-sm opacity-50\">loading...</div><ul id=\"todos-list\" class=\"list\" hx-get=\"/htmx/todos\" hx-trigger=\"load\" hx-swap=\"innerHTML\" hx-indicator=\"#todos-loading\"></ul></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

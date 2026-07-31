@@ -31,10 +31,17 @@ func Todos(todos []entity.Todo) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		for _, v := range todos {
-			templ_7745c5c3_Err = Todo(v).Render(ctx, templ_7745c5c3_Buffer)
+		if len(todos) == 0 {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<li class=\"list-row opacity-50\">No todos yet &mdash; add one above</li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
+			}
+		} else {
+			for _, v := range todos {
+				templ_7745c5c3_Err = Todo(v).Render(ctx, templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
 			}
 		}
 		return nil

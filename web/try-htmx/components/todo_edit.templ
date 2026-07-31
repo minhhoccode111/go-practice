@@ -1,0 +1,41 @@
+package components
+
+import "try-htmx/entity"
+import "fmt"
+
+templ TodoEditForm(todo entity.Todo) {
+	<li class="list-row">
+		<form
+			hx-put={ fmt.Sprintf("/htmx/%d", todo.ID) }
+			hx-target="closest li"
+			hx-swap="outerHTML"
+			hx-indicator="this"
+			hx-disabled-elt="button"
+			class="flex flex-1 gap-2"
+		>
+			<input
+				name="title"
+				value={ todo.Title }
+				type="text"
+				class="input w-full"
+				required
+				minlength="1"
+				maxlength="255"
+				autofocus
+			/>
+			<button class="btn btn-xs btn-primary">
+				<span class="htmx-indicator loading loading-spinner loading-xs"></span>
+				ok
+			</button>
+			<button
+				type="button"
+				hx-get={ fmt.Sprintf("/htmx/%d", todo.ID) }
+				hx-target="closest li"
+				hx-swap="outerHTML"
+				class="btn btn-xs"
+			>
+				cancel
+			</button>
+		</form>
+	</li>
+}

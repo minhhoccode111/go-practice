@@ -3,7 +3,11 @@ package components
 import "try-htmx/entity"
 
 templ Todos(todos []entity.Todo) {
-	for _, v := range todos {
-		@Todo(v)
+	if len(todos) == 0 {
+		<li class="list-row opacity-50">No todos yet &mdash; add one above</li>
+	} else {
+		for _, v := range todos {
+			@Todo(v)
+		}
 	}
 }

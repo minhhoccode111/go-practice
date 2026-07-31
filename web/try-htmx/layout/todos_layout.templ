@@ -5,7 +5,15 @@ import "try-htmx/components"
 templ TodosLayout() {
 	<div class="mx-auto max-w-md space-y-2 p-4">
 		<h2 class="text-lg font-bold">Todos</h2>
-		@components.TodoForm()
-		<div id="todos" hx-get="/htmx/todos" hx-trigger="load" class="list"></div>
+		@components.TodoForm(nil)
+		<div id="todos-loading" class="htmx-indicator text-sm opacity-50">loading...</div>
+		<ul
+			id="todos-list"
+			class="list"
+			hx-get="/htmx/todos"
+			hx-trigger="load"
+			hx-swap="innerHTML"
+			hx-indicator="#todos-loading"
+		></ul>
 	</div>
 }

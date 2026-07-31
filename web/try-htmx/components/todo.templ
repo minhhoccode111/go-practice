@@ -1,11 +1,43 @@
 package components
 
 import "try-htmx/entity"
+import "fmt"
 
 templ Todo(todo entity.Todo) {
-	if todo.IsDone {
-		<li class="list-row line-through">{ todo.Title } </li>
-	} else {
-		<li class="list-row">{ todo.Title } </li>
-	}
+	<li class={ "list-row flex gap-2 items-center justify-between", templ.KV("line-through", todo.IsDone) }>
+		<span class="flex-1">{ todo.Title }</span>
+		<div class="flex gap-1">
+			<button
+				hx-patch={ fmt.Sprintf("/htmx/%d/toggle", todo.ID) }
+				hx-target="closest li"
+				hx-swap="outerHTML"
+				aria-label={ fmt.Sprintf("Toggle %s", todo.Title) }
+				class="btn btn-xs btn-primary"
+			>
+				<span class="htmx-indicator loading loading-spinner loading-xs"></span>
+				&#10003;
+			</button>
+			<button
+				hx-get={ fmt.Sprintf("/htmx/%d/edit", todo.ID) }
+				hx-target="closest li"
+				hx-swap="outerHTML"
+				aria-label={ fmt.Sprintf("Edit %s", todo.Title) }
+				class="btn btn-xs"
+			>
+				<span class="htmx-indicator loading loading-spinner loading-xs"></span>
+				&#9998;
+			</button>
+			<button
+				hx-delete={ fmt.Sprintf("/htmx/%d", todo.ID) }
+				hx-target="#todos-list"
+				hx-swap="innerHTML"
+				hx-confirm="Delete this todo?"
+				aria-label={ fmt.Sprintf("Delete %s", todo.Title) }
+				class="btn btn-xs btn-error"
+			>
+				<span class="htmx-indicator loading loading-spinner loading-xs"></span>
+				&#10005;
+			</button>
+		</div>
+	</li>
 }

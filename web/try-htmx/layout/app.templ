@@ -24,7 +24,7 @@ templ App(data AppData, content templ.Component) {
 		<body>
 			<div class="drawer drawer-end">
 				<input id="mobile-drawer" type="checkbox" class="drawer-toggle md:hidden"/>
-				<div class="drawer-content flex flex-col min-h-screen">
+				<div class="drawer-content flex min-h-screen flex-col">
 					@components.Header()
 					<main id="main" class="flex-1">
 						@content

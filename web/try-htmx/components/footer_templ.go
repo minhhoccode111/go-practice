@@ -29,7 +29,7 @@ func Footer() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<footer class=\"footer footer-center bg-base-200 text-base-content p-6 border-t border-base-300\"><aside><p class=\"font-mono text-sm text-base-content/70\">Built with <a href=\"https://go.dev\" class=\"link link-hover text-[#3fb950]\" target=\"_blank\">Go</a> &amp; <a href=\"https://htmx.org\" class=\"link link-hover text-[#3fb950]\" target=\"_blank\">HTMX</a> &mdash; <span class=\"text-base-content/50\">&copy; 2026</span></p></aside></footer>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<footer class=\"footer footer-center bg-base-200 text-base-content border-base-300 border-t p-6\"><aside><p class=\"text-base-content/70 font-mono text-sm\">Built with <a href=\"https://go.dev\" class=\"link link-hover text-[#3fb950]\" target=\"_blank\">Go</a> &amp; <a href=\"https://htmx.org\" class=\"link link-hover text-[#3fb950]\" target=\"_blank\">HTMX</a> &mdash; <span class=\"text-base-content/50\">&copy; 2026</span></p></aside></footer>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

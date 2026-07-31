@@ -1,7 +1,7 @@
 package components
 
 templ Counter(c int) {
-	<div class="flex items-center gap-4 justify-center">
+	<div class="flex items-center justify-center gap-4">
 		<button hx-put="/htmx/dec" hx-target="#counter" class="btn btn-xs btn-secondary">-</button>
 		<button id="counter" hx-put="/htmx/reset" class="btn btn-xs btn-neutral">{ c }</button>
 		<button hx-put="/htmx/inc" hx-target="#counter" class="btn btn-xs btn-primary">+</button>
