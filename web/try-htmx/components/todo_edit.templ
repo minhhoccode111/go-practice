@@ -4,20 +4,20 @@ import "try-htmx/entity"
 import "fmt"
 
 templ TodoEditForm(todo entity.Todo) {
-	<li class="list-row">
+	<li class="list-row flex gap-2 items-center justify-between">
 		<form
 			hx-put={ fmt.Sprintf("/htmx/%d", todo.ID) }
 			hx-target="closest li"
 			hx-swap="outerHTML"
 			hx-indicator="this"
 			hx-disabled-elt="button"
-			class="flex flex-1 gap-2"
+			class="flex w-full flex-1 items-center justify-between gap-2"
 		>
 			<input
 				name="title"
 				value={ todo.Title }
 				type="text"
-				class="input w-full"
+				class="input input-xs w-full"
 				required
 				minlength="1"
 				maxlength="255"

@@ -32,7 +32,7 @@ func TodoEditForm(todo entity.Todo) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<li class=\"list-row\"><form hx-put=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<li class=\"list-row flex gap-2 items-center justify-between\"><form hx-put=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -45,7 +45,7 @@ func TodoEditForm(todo entity.Todo) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" hx-target=\"closest li\" hx-swap=\"outerHTML\" hx-indicator=\"this\" hx-disabled-elt=\"button\" class=\"flex flex-1 gap-2\"><input name=\"title\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" hx-target=\"closest li\" hx-swap=\"outerHTML\" hx-indicator=\"this\" hx-disabled-elt=\"button\" class=\"flex w-full flex-1 items-center justify-between gap-2\"><input name=\"title\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -58,7 +58,7 @@ func TodoEditForm(todo entity.Todo) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" type=\"text\" class=\"input w-full\" required minlength=\"1\" maxlength=\"255\" autofocus> <button class=\"btn btn-xs btn-primary\"><span class=\"htmx-indicator loading loading-spinner loading-xs\"></span> ok</button> <button type=\"button\" hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" type=\"text\" class=\"input input-xs w-full\" required minlength=\"1\" maxlength=\"255\" autofocus> <button class=\"btn btn-xs btn-primary\"><span class=\"htmx-indicator loading loading-spinner loading-xs\"></span> ok</button> <button type=\"button\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

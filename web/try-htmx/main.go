@@ -5,7 +5,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"try-htmx/components"
 	"try-htmx/entity"
@@ -140,7 +139,6 @@ func main() {
 	// persistence is needed. Not goroutine-safe — single-user learning app.
 
 	r.Get("/todos", func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(1 * time.Second)
 		content := layout.TodosLayout()
 		if r.Header.Get("HX-Request") == "true" {
 			renderer.Render(r.Context(), w, templ.Join(layout.PageTitle("Todos"), content))
@@ -151,12 +149,10 @@ func main() {
 	})
 
 	r.Get("/htmx/todos", func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(1 * time.Second)
 		renderer.Render(r.Context(), w, components.Todos(todos))
 	})
 
 	r.Post("/htmx/todos", func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(1 * time.Second)
 		title := strings.TrimSpace(r.FormValue("title"))
 		if len(title) < 1 || len(title) > 255 {
 			renderer.Render(r.Context(), w, components.FormErrors(
@@ -171,7 +167,11 @@ func main() {
 		}
 		nextID++
 		todos = append(todos, todo)
-		renderer.Render(r.Context(), w, templ.Join(components.Todo(todo), components.FormErrors(nil)))
+		renderer.Render(
+			r.Context(),
+			w,
+			templ.Join(components.Todos(todos), components.FormErrors(nil)),
+		)
 	})
 
 	r.Get("/htmx/{todoID}", func(w http.ResponseWriter, r *http.Request) {
@@ -180,7 +180,11 @@ func main() {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		renderer.Render(r.Context(), w, templ.Join(components.Todo(*todo), components.FormErrors(nil)))
+		renderer.Render(
+			r.Context(),
+			w,
+			templ.Join(components.Todo(*todo), components.FormErrors(nil)),
+		)
 	})
 
 	r.Get("/htmx/{todoID}/edit", func(w http.ResponseWriter, r *http.Request) {
@@ -193,7 +197,6 @@ func main() {
 	})
 
 	r.Put("/htmx/{todoID}", func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(1 * time.Second)
 		todo, ok := getTodo(todos, r)
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
@@ -208,22 +211,28 @@ func main() {
 			return
 		}
 		todo.Title = title
-		renderer.Render(r.Context(), w, templ.Join(components.Todo(*todo), components.FormErrors(nil)))
+		renderer.Render(
+			r.Context(),
+			w,
+			templ.Join(components.Todo(*todo), components.FormErrors(nil)),
+		)
 	})
 
 	r.Patch("/htmx/{todoID}/toggle", func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(1 * time.Second)
 		todo, ok := getTodo(todos, r)
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 		todo.IsDone = !todo.IsDone
-		renderer.Render(r.Context(), w, templ.Join(components.Todo(*todo), components.FormErrors(nil)))
+		renderer.Render(
+			r.Context(),
+			w,
+			templ.Join(components.Todo(*todo), components.FormErrors(nil)),
+		)
 	})
 
 	r.Delete("/htmx/{todoID}", func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(1 * time.Second)
 		id, ok := parseTodoID(r)
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)

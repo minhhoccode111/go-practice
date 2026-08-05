@@ -5,7 +5,7 @@ templ TodoForm(errors []string) {
 		id="todo-form"
 		hx-post="/htmx/todos"
 		hx-target="#todos-list"
-		hx-swap="beforeend"
+		hx-swap="innerHTML"
 		hx-indicator="this"
 		hx-disabled-elt="find button"
 		hx-on::after-request="if(event.detail.successful && !document.getElementById('form-errors').textContent.trim()) this.reset()"
