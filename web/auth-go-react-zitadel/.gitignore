@@ -1,0 +1,9 @@
+# .env
+# web/.env
+# backend/.env
+# zitadel/
+node_modules/
+web/dist/
+# web/*.tsbuildinfo
+# backend/server
+*.log

@@ -1,0 +1,55 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: zitadel
+      POSTGRES_PASSWORD: zitadel
+      POSTGRES_DB: zitadel
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zitadel -d zitadel"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  zitadel:
+    image: ghcr.io/zitadel/zitadel:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    user: "0"
+    command: start-from-init --masterkey "${ZITADEL_MASTERKEY}" --tlsMode disabled
+    ports:
+      - "${ZITADEL_PORT:-8082}:8080"
+    environment:
+      ZITADEL_PORT: 8080
+      ZITADEL_EXTERNALDOMAIN: localhost
+      ZITADEL_EXTERNALPORT: ${ZITADEL_PORT:-8082}
+      ZITADEL_EXTERNALSECURE: false
+      ZITADEL_TLS_ENABLED: false
+      ZITADEL_DATABASE_POSTGRES_DSN: postgresql://zitadel:zitadel@postgres:5432/zitadel?sslmode=disable
+
+      # First instance: admin human user (IAM_OWNER) + machine user with a PAT.
+      ZITADEL_FIRSTINSTANCE_ORG_NAME: ${ZITADEL_FIRSTINSTANCE_ORG_NAME:-Zitadel}
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_USERNAME: ${ZITADEL_FIRSTINSTANCE_ORG_HUMAN_USERNAME:-zitadel-admin}
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORD: ${ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORD:-Password1!}
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORDCHANGEREQUIRED: false
+
+      # Machine user with IAM_OWNER; its PAT is written to /zitadel/admin.pat (used by scripts/setup.sh).
+      ZITADEL_FIRSTINSTANCE_MACHINEKEYPATH: /zitadel/admin-sa.json
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_USERNAME: zitadel-admin-sa
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_NAME: Admin
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINEKEY_TYPE: 1
+      ZITADEL_FIRSTINSTANCE_PATPATH: /zitadel/admin.pat
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_PAT_EXPIRATIONDATE: "2099-01-01T00:00:00Z"
+
+      # Single image serves Login V1 (V2 needs the separate zitadel-login container).
+      ZITADEL_DEFAULTINSTANCE_FEATURES_LOGINV2_REQUIRED: "false"
+    volumes:
+      - ./zitadel:/zitadel
+
+volumes:
+  postgres-data:
