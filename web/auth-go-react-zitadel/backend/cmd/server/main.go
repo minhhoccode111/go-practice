@@ -15,6 +15,10 @@ import (
 func main() {
 	issuer := envOr("ZITADEL_ISSUER", "http://localhost:8082")
 	projectID := envOr("ZITADEL_PROJECT_ID", "")
+	if projectID == "" {
+		slog.Error("ZITADEL_PROJECT_ID is required (source backend/.env)")
+		os.Exit(1)
+	}
 	port := envOr("PORT", "8083")
 
 	ctx := context.Background()
@@ -58,13 +62,16 @@ func handleMe(w http.ResponseWriter, r *http.Request) {
 // cors wraps a handler and adds dev CORS headers. Preflight requests
 // for Authorization header are answered directly.
 func cors(next http.Handler) http.Handler {
+	// Allow a configurable origin (e.g. a deployed frontend), defaulting to
+	// the local Vite dev server. localhost on any port is accepted for dev.
 	allow := os.Getenv("CORS_ORIGIN")
 	if allow == "" {
 		allow = "http://localhost:5174"
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
-		if strings.HasPrefix(origin, "http://localhost:") {
+		if origin == allow ||
+			(allow == "http://localhost:5174" && strings.HasPrefix(origin, "http://localhost:")) {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Vary", "Origin")
 		}

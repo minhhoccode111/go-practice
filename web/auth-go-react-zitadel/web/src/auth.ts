@@ -1,4 +1,12 @@
-import type { UserManagerSettings } from "oidc-client-ts";
+import type { User } from "oidc-client-ts";
+import type { AuthProviderProps } from "react-oidc-context";
+
+// Required by react-oidc-context: strips code/state from the URL after login.
+// Without it, refreshing the callback URL re-runs signinCallback with a
+// consumed state and breaks silent renew.
+export const onSigninCallback = (_user: User | undefined): void => {
+  window.history.replaceState({}, document.title, window.location.pathname);
+};
 
 const issuer = import.meta.env.VITE_ZITADEL_ISSUER;
 const clientId = import.meta.env.VITE_ZITADEL_CLIENT_ID;
@@ -7,7 +15,7 @@ const redirectUri = import.meta.env.VITE_ZITADEL_REDIRECT_URI;
 const postLogoutRedirectUri = import.meta.env
   .VITE_ZITADEL_POST_LOGOUT_REDIRECT_URI;
 
-export const oidcConfig: UserManagerSettings = {
+export const oidcConfig: AuthProviderProps = {
   authority: issuer,
   client_id: clientId,
   redirect_uri: redirectUri,
@@ -17,6 +25,7 @@ export const oidcConfig: UserManagerSettings = {
   automaticSilentRenew: true,
   filterProtocolClaims: true,
   loadUserInfo: true,
+  onSigninCallback,
 };
 
 export function apiUrl(path: string): string {

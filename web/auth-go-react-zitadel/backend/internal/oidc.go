@@ -10,11 +10,13 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"golang.org/x/oauth2"
 )
 
 // Verifier validates access tokens signed by ZITADEL.
 type Verifier struct {
 	verifier *oidc.IDTokenVerifier
+	provider *oidc.Provider
 	aud      string // required project audience (urn:zitadel:...:project:id:<id>:aud)
 }
 
@@ -40,21 +42,24 @@ func NewVerifier(ctx context.Context, issuer string, projectID string) (*Verifie
 
 	return &Verifier{
 		verifier: provider.Verifier(config),
+		provider: provider,
 		aud:      projectID,
 	}, nil
 }
 
-// Claims is the user profile carried by a verified token.
+// Claims is the user profile carried by a verified token. ZITADEL JWT access
+// tokens carry only sub/aud/iss/exp/iat/azp/jti; the profile claims
+// (email, name, preferred_username, ...) live at the userinfo endpoint and are
+// merged in by Verify.
 type Claims struct {
-	Subject   string            `json:"sub"`
-	Email     string            `json:"email"`
-	EmailVer  bool              `json:"email_verified"`
-	Name      string            `json:"name"`
-	GivenName string            `json:"given_name"`
-	FamilyName string           `json:"family_name"`
-	Username  string            `json:"preferred_username"`
-	Aud       []string          `json:"aud"`
-	Raw       map[string]any    `json:"-"`
+	Subject    string   `json:"sub"`
+	Email      string   `json:"email"`
+	EmailVer   bool     `json:"email_verified"`
+	Name       string   `json:"name"`
+	GivenName  string   `json:"given_name"`
+	FamilyName string   `json:"family_name"`
+	Username   string   `json:"preferred_username"`
+	Aud        []string `json:"aud"`
 }
 
 // Verify parses + validates the Bearer token and returns its claims.
@@ -73,7 +78,39 @@ func (v *Verifier) Verify(ctx context.Context, token string) (*Claims, error) {
 	if !hasAud(c.Aud, v.aud) {
 		return nil, fmt.Errorf("token aud %v does not include %s", c.Aud, v.aud)
 	}
+	if err := v.fetchProfile(ctx, token, &c); err != nil {
+		slog.Warn("userinfo fetch failed", "error", err)
+	}
 	return &c, nil
+}
+
+// fetchProfile enriches claims with the userinfo endpoint, which is where
+// ZITADEL (and OIDC in general) exposes the profile claims.
+func (v *Verifier) fetchProfile(ctx context.Context, token string, c *Claims) error {
+	src := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
+	info, err := v.provider.UserInfo(ctx, src)
+	if err != nil {
+		return err
+	}
+	if info.Subject != "" && info.Subject != c.Subject {
+		return fmt.Errorf("userinfo sub %q does not match token sub %q", info.Subject, c.Subject)
+	}
+	var extra struct {
+		Name       string `json:"name"`
+		GivenName  string `json:"given_name"`
+		FamilyName string `json:"family_name"`
+		Username   string `json:"preferred_username"`
+	}
+	if err := info.Claims(&extra); err != nil {
+		return fmt.Errorf("decode userinfo: %w", err)
+	}
+	c.Email = info.Email
+	c.EmailVer = info.EmailVerified
+	c.Name = extra.Name
+	c.GivenName = extra.GivenName
+	c.FamilyName = extra.FamilyName
+	c.Username = extra.Username
+	return nil
 }
 
 func hasAud(auds []string, want string) bool {

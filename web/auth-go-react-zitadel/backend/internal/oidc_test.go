@@ -3,7 +3,9 @@ package internal
 import "testing"
 
 func TestHasAud(t *testing.T) {
-	want := "urn:zitadel:iam:org:project:id:123:aud"
+	// setup.sh writes the raw numeric project id (not the urn scope form) to
+	// backend/.env, and that is what ZITADEL puts in the access token aud.
+	want := "385060034775613444"
 	cases := []struct {
 		auds []string
 		ok   bool

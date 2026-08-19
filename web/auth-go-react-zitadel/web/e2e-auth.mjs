@@ -5,6 +5,7 @@ import puppeteer from "puppeteer-core";
 const APP = "http://localhost:5174";
 const USER = process.env.E2E_USER ?? "zitadel-admin@zitadel.localhost";
 const PASS = process.env.E2E_PASS ?? "Password1!";
+const CHROME = process.env.CHROME_PATH ?? "/usr/bin/google-chrome";
 
 const log = (...a) => console.log("[e2e]", ...a);
 
@@ -25,7 +26,7 @@ async function waitFor(fn, desc, timeout = 20000) {
 }
 
 const browser = await puppeteer.launch({
-  executablePath: "/usr/bin/google-chrome",
+  executablePath: CHROME,
   headless: "new",
   args: ["--no-sandbox", "--disable-dev-shm-usage"],
 });

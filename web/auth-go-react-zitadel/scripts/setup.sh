@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Creates the ZITADEL project + OIDC SPA application and writes frontend/backend env files.
-# Idempotent: skips if app already provisioned (web/.env exists with a client id).
+# Idempotent: skips if app already provisioned for THIS instance.
+# The instance fingerprint is derived from the machine PAT, which ZITADEL
+# regenerates on every fresh init — so `docker compose down -v` followed by a
+# re-run detects the new instance and re-provisions instead of skipping on a
+# stale web/.env.
 set -euo pipefail
 
 ZITADEL_PORT="${ZITADEL_PORT:-8082}"
@@ -8,15 +12,7 @@ BASE_URL="http://localhost:${ZITADEL_PORT}"
 PAT_FILE="zitadel/admin.pat"
 WEB_ENV="web/.env"
 BACKEND_ENV="backend/.env"
-
-app_exists() {
-  [[ -f "$WEB_ENV" ]] && grep -q '^VITE_ZITADEL_CLIENT_ID=.\+' "$WEB_ENV" 2>/dev/null
-}
-
-if app_exists; then
-  echo "Provisioning already done ($WEB_ENV exists). Skipping."
-  exit 0
-fi
+FINGERPRINT_VAR="VITE_ZITADEL_INSTANCE_FINGERPRINT"
 
 # Wait for ZITADEL to be ready.
 echo "Waiting for ZITADEL at $BASE_URL ..."
@@ -45,6 +41,15 @@ fi
 PAT="$(printf '%s' "$PAT" | tr -d '\r\n')"
 [[ -z "$PAT" ]] && { echo "Empty PAT" >&2; exit 1; }
 echo "PAT acquired."
+
+# Idempotency check. A fresh `start-from-init` mints a new PAT, so fingerprint
+# the instance by the PAT and skip only when web/.env was provisioned for the
+# SAME instance. This avoids skipping on a stale web/.env after `down -v`.
+FINGERPRINT="$(printf '%s' "$PAT" | sha256sum | cut -d' ' -f1)"
+if [[ -f "$WEB_ENV" ]] && grep -q "^$FINGERPRINT_VAR=$FINGERPRINT" "$WEB_ENV" 2>/dev/null; then
+  echo "Provisioning already done for this instance. Skipping."
+  exit 0
+fi
 
 AUTH=(-H "Authorization: Bearer $PAT" -H "Content-Type: application/json")
 
@@ -79,7 +84,9 @@ APP_JSON=$(post "/zitadel.application.v2.ApplicationService/CreateApplication" \
 CLIENT_ID="$(printf '%s' "$APP_JSON" | jq -r .oidcConfiguration.clientId)"
 echo "App: $CLIENT_ID"
 
-SCOPE="openid profile email urn:zitadel:iam:org:project:id:${PROJECT_ID}:aud"
+# offline_access lets oidc-client-ts use refresh tokens for silent renew
+# instead of an iframe (ZITADEL blocks iframe embedding by default).
+SCOPE="openid profile email offline_access urn:zitadel:iam:org:project:id:${PROJECT_ID}:aud"
 
 mkdir -p web backend
 cat > "$WEB_ENV" <<EOF
@@ -89,6 +96,7 @@ VITE_ZITADEL_SCOPE=$SCOPE
 VITE_ZITADEL_REDIRECT_URI=http://localhost:5174/auth/callback
 VITE_ZITADEL_POST_LOGOUT_REDIRECT_URI=http://localhost:5174
 VITE_API_URL=http://localhost:8083
+$FINGERPRINT_VAR=$FINGERPRINT
 EOF
 
 cat > "$BACKEND_ENV" <<EOF
