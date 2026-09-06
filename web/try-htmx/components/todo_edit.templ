@@ -10,7 +10,7 @@ templ TodoEditForm(todo entity.Todo) {
 			hx-target="closest li"
 			hx-swap="outerHTML"
 			hx-indicator="this"
-			hx-disabled-elt="button"
+			hx-disable="find button"
 			class="flex w-full flex-1 items-center justify-between gap-2"
 		>
 			<input

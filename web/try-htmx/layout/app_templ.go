@@ -90,7 +90,7 @@ func App(data AppData, content templ.Component) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, " &mdash; try-htmx</title><link href=\"/assets/css/output.css\" rel=\"stylesheet\"><script defer src=\"/assets/js/htmx.min.js\"></script><script defer src=\"/assets/js/alpine.min.js\"></script></head><body><div class=\"drawer drawer-end\"><input id=\"mobile-drawer\" type=\"checkbox\" class=\"drawer-toggle md:hidden\"><div class=\"drawer-content flex min-h-screen flex-col\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, " &mdash; try-htmx</title><link href=\"/assets/css/output.css\" rel=\"stylesheet\"><meta name=\"htmx-config\" content='{\"noSwap\": [204, 304, \"4xx\", \"5xx\"]}'><script defer src=\"/assets/js/htmx.min.js\"></script><script defer src=\"/assets/js/alpine.min.js\"></script></head><body><div class=\"drawer drawer-end\"><input id=\"mobile-drawer\" type=\"checkbox\" class=\"drawer-toggle md:hidden\"><div class=\"drawer-content flex min-h-screen flex-col\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -45,7 +45,7 @@ func TodoEditForm(todo entity.Todo) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" hx-target=\"closest li\" hx-swap=\"outerHTML\" hx-indicator=\"this\" hx-disabled-elt=\"button\" class=\"flex w-full flex-1 items-center justify-between gap-2\"><input name=\"title\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" hx-target=\"closest li\" hx-swap=\"outerHTML\" hx-indicator=\"this\" hx-disable=\"find button\" class=\"flex w-full flex-1 items-center justify-between gap-2\"><input name=\"title\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
