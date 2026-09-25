@@ -1,0 +1,30 @@
+{{define "content"}}
+<div id="login">
+  <h2>Login</h2>
+  <form action="">
+    <div>
+      <label>
+        Email:
+        <input type="email" required />
+      </label>
+    </div>
+
+    <div>
+      <label>
+        Password:
+        <input type="password" required />
+      </label>
+    </div>
+  </form>
+
+  <p>Don't have account? <a href="/register">Register</a> now</p>
+</div>
+
+<style>
+  div {
+    max-width: 25vw;
+    margin: auto;
+  }
+</style>
+
+{{end}}

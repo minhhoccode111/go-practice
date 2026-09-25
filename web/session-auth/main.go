@@ -16,6 +16,7 @@ import (
 	"session-auth/pkg/db"
 	"session-auth/repo/persistent"
 	"session-auth/service/user"
+	"session-auth/view"
 )
 
 func main() {
@@ -31,10 +32,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("error auto migrate db: %v", err)
 	}
+	v, err := view.New()
+	if err != nil {
+		log.Fatalf("error load templates: %v", err)
+	}
 	userRepo := persistent.NewUserRepo(database)
 	sessionRepo := persistent.NewSessionRepo(database)
 	userService := user.New(userRepo, sessionRepo)
-	router := controller.NewRouter(cfg, userService)
+	router := controller.NewRouter(cfg, userService, v)
 	mux := http.NewServeMux()
 	router.Register(mux)
 	svr := &http.Server{Addr: cfg.Addr, Handler: mux}

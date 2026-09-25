@@ -1,0 +1,48 @@
+{{define "content"}}
+<div id="register">
+  <h2>Register</h2>
+  <form
+    hx-post="/register"
+    hx-target="#register"
+    hx-swap="outerHTML"
+    hx-status:422="target:#register-errors swap:innerHTML"
+    hx-indicator="#register-spinner"
+  >
+    <div>
+      <label>
+        Email:
+        <input type="email" name="email" required />
+      </label>
+    </div>
+
+    <div>
+      <label>
+        Password:
+        <input type="password" name="password" required />
+      </label>
+    </div>
+
+    <div>
+      <label>
+        Repeat Password:
+        <input type="password" name="repeat-password" required />
+      </label>
+    </div>
+
+    <div id="register-errors"></div>
+
+    <button type="submit">Submit</button>
+    <span id="register-spinner" class="htmx-indicator">…</span>
+  </form>
+
+  <p>Already have account? <a href="/login">Login</a> now</p>
+</div>
+
+<style>
+  div {
+    max-width: 25vw;
+    margin: auto;
+  }
+</style>
+
+{{end}}

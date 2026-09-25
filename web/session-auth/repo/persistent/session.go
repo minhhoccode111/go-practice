@@ -2,6 +2,7 @@ package persistent
 
 import (
 	"context"
+
 	"session-auth/entity"
 
 	"gorm.io/gorm"
@@ -17,6 +18,14 @@ func NewSessionRepo(db *gorm.DB) *SessionRepo {
 	}
 }
 
-func (r *SessionRepo) Create(ctx context.Context, s *entity.Session) error
-func (r *SessionRepo) FindByTokenHash(ctx context.Context, hash string) (*entity.Session, error)
-func (r *SessionRepo) DeleteByTokenHash(ctx context.Context, hash string) error
+func (r *SessionRepo) Create(ctx context.Context, s *entity.Session) error {
+	panic("")
+}
+
+func (r *SessionRepo) FindByTokenHash(ctx context.Context, hash string) (*entity.Session, error) {
+	panic("")
+}
+
+func (r *SessionRepo) DeleteByTokenHash(ctx context.Context, hash string) error {
+	panic("")
+}
