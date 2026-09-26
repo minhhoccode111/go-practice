@@ -1,2 +1,4 @@
 tmp/
 # .opencode
+data/*
+!data/.gitkeep

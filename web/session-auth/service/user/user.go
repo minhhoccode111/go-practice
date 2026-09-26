@@ -31,6 +31,9 @@ func (s *Service) Register(ctx context.Context, email, password string) (*entity
 	if !helpers.IsValidEmail(email) {
 		return nil, entity.ErrInvalidEmail
 	}
+	if helpers.IsValidPassword(password) {
+		return nil, entity.ErrWeakPassword
+	}
 	if _, err := s.u.FindByEmail(ctx, email); err == nil {
 		return nil, entity.ErrEmailTaken
 	} else if !errors.Is(err, entity.ErrNotFound) {

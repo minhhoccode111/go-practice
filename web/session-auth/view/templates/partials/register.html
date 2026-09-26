@@ -4,9 +4,10 @@
   <form
     hx-post="/register"
     hx-target="#register"
-    hx-swap="outerHTML"
+    hx-swap="innerHTML"
     hx-status:422="target:#register-errors swap:innerHTML"
     hx-indicator="#register-spinner"
+    hx-disable="#register input, #register button"
   >
     <div>
       <label>
@@ -31,17 +32,40 @@
 
     <div id="register-errors"></div>
 
-    <button type="submit">Submit</button>
-    <span id="register-spinner" class="htmx-indicator">…</span>
+    <div class="register-actions">
+      <span id="register-spinner" class="htmx-indicator">…</span>
+      <button type="submit">Submit</button>
+    </div>
   </form>
 
   <p>Already have account? <a href="/login">Login</a> now</p>
 </div>
 
 <style>
-  div {
+  #register {
     max-width: 25vw;
     margin: auto;
+  }
+
+  #register label {
+    display: block;
+    margin-bottom: 0.75rem;
+  }
+
+  #register input {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    margin-top: 0.25rem;
+  }
+
+  .register-actions {
+    text-align: right;
+  }
+
+  form.htmx-request input,
+  form.htmx-request button {
+    opacity: 0.6;
   }
 </style>
 

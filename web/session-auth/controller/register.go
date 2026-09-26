@@ -3,6 +3,7 @@ package controller
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"session-auth/entity"
 )
@@ -15,6 +16,7 @@ func (c *Router) RenderRegister(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Router) HandleRegister(w http.ResponseWriter, r *http.Request) {
+	time.Sleep(5 * time.Second)
 	email := r.FormValue("email")
 	password := r.FormValue("password")
 	confirm := r.FormValue("repeat-password")
