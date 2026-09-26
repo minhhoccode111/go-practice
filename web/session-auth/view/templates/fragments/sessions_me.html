@@ -1,0 +1,110 @@
+<ul class="session-list">
+  {{range .}}
+  <li>
+    <span class="session-id">Session #{{.ID}}</span>
+    <span class="session-expires">Expires {{.ExpiresAt.Format "Jan 2, 15:04"}}</span>
+    {{if .Current}}
+    <span class="session-current">This session</span>
+    <a class="session-action" href="/logout">Log out</a>
+    {{else}}
+    <button
+      class="session-action session-delete"
+      hx-delete="/htmx/sessions/{{.ID}}"
+      hx-target="closest li"
+      hx-swap="delete"
+      hx-confirm="Delete session #{{.ID}}?"
+    >
+      Delete
+    </button>
+    {{end}}
+  </li>
+  {{else}}
+  <li class="session-none">No active sessions.</li>
+  {{end}}
+</ul>
+
+<style>
+  .session-list {
+    margin: 0;
+    padding: 0;
+    font-family:
+      system-ui,
+      -apple-system,
+      "Segoe UI",
+      Roboto,
+      sans-serif;
+    font-size: 0.9375rem;
+    list-style: none;
+  }
+
+  .session-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0;
+    border-bottom: 1px solid #e6e8eb;
+  }
+
+  .session-list li:first-child {
+    border-top: 1px solid #e6e8eb;
+  }
+
+  .session-id {
+    font-weight: 600;
+    color: #16181d;
+  }
+
+  .session-expires {
+    margin-right: auto;
+    color: #606a76;
+  }
+
+  .session-current {
+    padding: 0.125rem 0.5rem;
+    font-size: 0.75rem;
+    color: #2f6b46;
+    background: #e8f2ec;
+    border-radius: 999px;
+  }
+
+  .session-none {
+    color: #606a76;
+  }
+
+  .session-action {
+    padding: 0;
+    font: inherit;
+    font-size: 0.875rem;
+    color: #606a76;
+    text-decoration: none;
+    background: none;
+    border: none;
+    border-bottom: 1px solid transparent;
+    cursor: pointer;
+    transition:
+      color 120ms ease,
+      border-color 120ms ease;
+  }
+
+  .session-action:hover {
+    color: #16181d;
+    border-bottom-color: currentColor;
+  }
+
+  .session-delete:hover {
+    color: #b3261e;
+    border-bottom-color: #b3261e;
+  }
+
+  .session-action:focus-visible {
+    outline: 2px solid #16181d;
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .session-action {
+      transition: none;
+    }
+  }
+</style>

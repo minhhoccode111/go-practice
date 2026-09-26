@@ -3,31 +3,26 @@ package controller
 import (
 	"errors"
 	"net/http"
-	"time"
 
 	"session-auth/entity"
+	"session-auth/view"
 )
 
 func (c *Router) RenderRegister(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := c.view.RenderPage(w, "register.html", nil); err != nil {
+	if err := c.view.RenderPage(w, "register.html", view.PageData{Current: "register"}); err != nil {
 		http.Error(w, "render: "+err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func (c *Router) HandleRegister(w http.ResponseWriter, r *http.Request) {
-	time.Sleep(5 * time.Second)
 	email := r.FormValue("email")
 	password := r.FormValue("password")
 	confirm := r.FormValue("repeat-password")
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
 	if password != confirm {
 		c.registerErrors(w, "passwords do not match")
 		return
 	}
-
 	_, err := c.u.Register(r.Context(), email, password)
 	switch {
 	case errors.Is(err, entity.ErrInvalidEmail):
@@ -39,13 +34,13 @@ func (c *Router) HandleRegister(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		http.Error(w, "register: "+err.Error(), http.StatusInternalServerError)
 	default:
-		if err := c.view.Render(w, "register_success.html", nil); err != nil {
-			http.Error(w, "render: "+err.Error(), http.StatusInternalServerError)
-		}
+		w.Header().Set("HX-Redirect", "/login?registered=1")
+		w.WriteHeader(http.StatusOK)
 	}
 }
 
 func (c *Router) registerErrors(w http.ResponseWriter, msg string) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusUnprocessableEntity)
 	if err := c.view.Render(w, "register_errors.html", msg); err != nil {
 		http.Error(w, "render: "+err.Error(), http.StatusInternalServerError)

@@ -1,0 +1,38 @@
+{{define "content"}}
+<div id="logout">
+  <h2>Log out</h2>
+  <p>Are you sure you want to log out? You'll need to sign in again to continue.</p>
+
+  <form
+    hx-post="/htmx/logout"
+    hx-swap="none"
+    hx-indicator="#logout-spinner"
+    hx-disable="find button"
+  >
+    <div class="logout-actions">
+      <a href="/">Cancel</a>
+      <span id="logout-spinner" class="htmx-indicator">…</span>
+      <button type="submit">Logout</button>
+    </div>
+  </form>
+</div>
+
+<style>
+  #logout {
+    max-width: 35vw;
+    margin: 2rem auto;
+  }
+
+  .logout-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1rem;
+  }
+
+  form.htmx-request button {
+    opacity: 0.6;
+  }
+</style>
+
+{{end}}

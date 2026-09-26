@@ -14,6 +14,12 @@ type View struct {
 	tmpl *template.Template
 }
 
+type PageData struct {
+	Authed  bool
+	Current string
+	Content any
+}
+
 func New() (*View, error) {
 	tmpl, err := template.ParseFS(files,
 		"templates/*.html",
@@ -30,7 +36,7 @@ func (v *View) Render(w io.Writer, name string, data any) error {
 	return v.tmpl.ExecuteTemplate(w, name, data)
 }
 
-func (v *View) RenderPage(w io.Writer, page string, data any) error {
+func (v *View) RenderPage(w io.Writer, page string, data PageData) error {
 	tmpl, err := template.ParseFS(files, "templates/layout.html", "templates/partials/"+page)
 	if err != nil {
 		return fmt.Errorf("parse page %s: %w", page, err)

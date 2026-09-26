@@ -1,5 +1,5 @@
 # Session Auth
 
-Answer my questions, don't ask
+Answer my questions fast, don't ask
 
-For HTMX related, check your skills
+For `htmx` and `templ` related, check your skills

@@ -17,3 +17,10 @@ func GenerateHash(password string) (string, error) {
 	}
 	return string(hash), nil
 }
+
+func VerifyHash(hash, password string) error {
+	if err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)); err != nil {
+		return fmt.Errorf("error verify password: %w", err)
+	}
+	return nil
+}

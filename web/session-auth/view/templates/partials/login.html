@@ -1,22 +1,38 @@
 {{define "content"}}
+
 <div id="login">
   <h2>Login</h2>
-  <form action="">
+
+  {{if .Registered}}
+  <p class="success">Account created. Please log in.</p>
+  {{end}}
+
+  <form
+    hx-post="/htmx/login"
+    hx-target="#login"
+    hx-swap="innerHTML"
+    hx-status:422="target:#login-errors swap:innerHTML"
+    hx-indicator="#login-spinner"
+    hx-disable="#login input, #login button"
+  >
     <div>
       <label>
         Email:
-        <input type="email" required />
+        <input type="email" name="email" required />
       </label>
     </div>
 
     <div>
       <label>
         Password:
-        <input type="password" required />
+        <input type="password" name="password" required />
       </label>
     </div>
 
+    <div id="login-errors"></div>
+
     <div class="login-actions">
+      <span id="login-spinner" class="htmx-indicator">…</span>
       <button type="submit">Login</button>
     </div>
   </form>
@@ -26,7 +42,7 @@
 
 <style>
   #login {
-    max-width: 25vw;
+    max-width: 35vw;
     margin: auto;
   }
 
@@ -44,6 +60,15 @@
 
   .login-actions {
     text-align: right;
+  }
+
+  .success {
+    color: green;
+  }
+
+  form.htmx-request input,
+  form.htmx-request button {
+    opacity: 0.6;
   }
 </style>
 

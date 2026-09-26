@@ -42,7 +42,7 @@ func main() {
 	router := controller.NewRouter(cfg, userService, v)
 	mux := http.NewServeMux()
 	router.Register(mux)
-	svr := &http.Server{Addr: cfg.Addr, Handler: mux}
+	svr := &http.Server{Addr: cfg.Addr, Handler: controller.Sleep(mux)}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	go func() {

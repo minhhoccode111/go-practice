@@ -1,7 +1,14 @@
 {{define "content"}}
+<div id="index">
+  <h2>Index</h2>
+  <p hx-get="/htmx/me" hx-trigger="load" hx-swap="outerHTML">Loading…</p>
+</div>
 
-<p>Display email here if user is authenticated</p>
-
-<p><a href="/logout">Logout</a></p>
+<style>
+  #index {
+    max-width: 35vw;
+    margin: 2rem auto;
+  }
+</style>
 
 {{end}}

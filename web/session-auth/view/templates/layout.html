@@ -5,9 +5,90 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Session Auth</title>
+    <style>
+      body {
+        margin: 0;
+      }
+
+      .site-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 2rem;
+        padding: 0.875rem clamp(1rem, 4vw, 2.5rem);
+        background: #fff;
+        border-bottom: 1px solid #e6e8eb;
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+
+      .site-header .brand {
+        font-size: 1rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        color: #16181d;
+        text-decoration: none;
+      }
+
+      .site-nav {
+        display: flex;
+        align-items: center;
+        gap: clamp(1rem, 3vw, 1.75rem);
+      }
+
+      .site-nav a {
+        padding: 0.125rem 0;
+        font-size: 0.9375rem;
+        color: #606a76;
+        text-decoration: none;
+        border-bottom: 2px solid transparent;
+        transition:
+          color 120ms ease,
+          border-color 120ms ease;
+      }
+
+      .site-nav a:hover {
+        color: #16181d;
+        border-bottom-color: currentColor;
+      }
+
+      .site-nav a[aria-current="page"] {
+        color: #16181d;
+        border-bottom-color: #16181d;
+      }
+
+      .site-header a:focus-visible {
+        outline: 2px solid #16181d;
+        outline-offset: 3px;
+        border-radius: 2px;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .site-nav a {
+          transition: none;
+        }
+      }
+    </style>
   </head>
   <body>
-    {{template "content" .}}
+    <header class="site-header">
+      <a class="brand" href="/">Session Auth</a>
+      <nav class="site-nav" aria-label="Main">
+        {{if .Authed}}
+        <a href="/" {{if eq .Current "home"}}aria-current="page"{{end}}>Home</a>
+        <a href="/sessions" {{if eq .Current "sessions"}}aria-current="page"{{end}}>Sessions</a>
+        <a href="/logout" {{if eq .Current "logout"}}aria-current="page"{{end}}>Logout</a>
+        {{else}}
+        <a href="/login" {{if eq .Current "login"}}aria-current="page"{{end}}>Login</a>
+        <a href="/register" {{if eq .Current "register"}}aria-current="page"{{end}}>Register</a>
+        {{end}}
+      </nav>
+    </header>
+    {{template "content" .Content}}
     <script
       src="https://cdn.jsdelivr.net/npm/htmx.org@4.0.0/dist/htmx.min.js"
       integrity="sha384-BvJpBiO8Kh31EqtJe5DRIeWrHWnCGkwytKs9NKFi86Hhw96dEqdEMzZDeK9iEGTc"

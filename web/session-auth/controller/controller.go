@@ -23,16 +23,23 @@ func NewRouter(cfg *config.Config, u service.User, v *view.View) *Router {
 }
 
 func (c *Router) Register(mux *http.ServeMux) {
-	mux.HandleFunc("GET /", c.Index)
-	mux.HandleFunc("GET /login", c.RenderLogin)
-	mux.HandleFunc("POST /login", c.HandleLogin)
-	mux.HandleFunc("GET /register", c.RenderRegister)
-	mux.HandleFunc("POST /register", c.HandleRegister)
+	mux.Handle("GET /", c.RequireAuth(http.HandlerFunc(c.Index)))
+	mux.Handle("GET /sessions", c.RequireAuth(http.HandlerFunc(c.RenderSessions)))
+	mux.Handle("GET /htmx/sessions/me", c.RequireAuth(http.HandlerFunc(c.HandleGetMySessions)))
+	mux.Handle("DELETE /htmx/sessions/{id}", c.RequireAuth(http.HandlerFunc(c.HandleDeleteSession)))
+	mux.Handle("DELETE /htmx/sessions", c.RequireAuth(http.HandlerFunc(c.HandleDeleteAllSessions)))
+	mux.Handle("GET /htmx/me", c.RequireAuth(http.HandlerFunc(c.HandleGetMe)))
+	mux.Handle("GET /logout", c.RequireAuth(http.HandlerFunc(c.RenderLogoutConfirm)))
+	mux.Handle("GET /login", c.RedirectIfAuthed(http.HandlerFunc(c.RenderLogin)))
+	mux.Handle("GET /register", c.RedirectIfAuthed(http.HandlerFunc(c.RenderRegister)))
+	mux.HandleFunc("POST /htmx/login", c.HandleLogin)
+	mux.HandleFunc("POST /htmx/register", c.HandleRegister)
+	mux.HandleFunc("POST /htmx/logout", c.HandleLogout)
 }
 
 func (c *Router) Index(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := c.view.RenderPage(w, "index.html", nil); err != nil {
+	if err := c.view.RenderPage(w, "index.html", view.PageData{Authed: true, Current: "home"}); err != nil {
 		http.Error(w, "render: "+err.Error(), http.StatusInternalServerError)
 	}
 }
