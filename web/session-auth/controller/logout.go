@@ -8,7 +8,7 @@ import (
 
 func (c *Router) RenderLogoutConfirm(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := c.view.RenderPage(w, "logout.html", view.PageData{Authed: true, Current: "logout"}); err != nil {
+	if err := c.view.RenderPage(w, view.PageLogout, view.PageData{Authed: true, Current: "logout"}); err != nil {
 		http.Error(w, "render: "+err.Error(), http.StatusInternalServerError)
 	}
 }

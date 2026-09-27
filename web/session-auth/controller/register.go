@@ -10,7 +10,7 @@ import (
 
 func (c *Router) RenderRegister(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := c.view.RenderPage(w, "register.html", view.PageData{Current: "register"}); err != nil {
+	if err := c.view.RenderPage(w, view.PageRegister, view.PageData{Current: "register"}); err != nil {
 		http.Error(w, "render: "+err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -42,7 +42,7 @@ func (c *Router) HandleRegister(w http.ResponseWriter, r *http.Request) {
 func (c *Router) registerErrors(w http.ResponseWriter, msg string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusUnprocessableEntity)
-	if err := c.view.Render(w, "register_errors.html", msg); err != nil {
+	if err := c.view.Render(w, view.FragmentRegisterErrors, msg); err != nil {
 		http.Error(w, "render: "+err.Error(), http.StatusInternalServerError)
 	}
 }

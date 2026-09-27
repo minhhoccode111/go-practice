@@ -18,7 +18,7 @@ type sessionView struct {
 
 func (c *Router) RenderSessions(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := c.view.RenderPage(w, "sessions.html", view.PageData{Authed: true, Current: "sessions"}); err != nil {
+	if err := c.view.RenderPage(w, view.PageSessions, view.PageData{Authed: true, Current: "sessions"}); err != nil {
 		http.Error(w, "render: "+err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -47,7 +47,7 @@ func (c *Router) HandleGetMySessions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := c.view.Render(w, "sessions_me.html", rows); err != nil {
+	if err := c.view.Render(w, view.FragmentSessionsMe, rows); err != nil {
 		http.Error(w, "render: "+err.Error(), http.StatusInternalServerError)
 	}
 }

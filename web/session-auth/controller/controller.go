@@ -39,7 +39,7 @@ func (c *Router) Register(mux *http.ServeMux) {
 
 func (c *Router) Index(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := c.view.RenderPage(w, "index.html", view.PageData{Authed: true, Current: "home"}); err != nil {
+	if err := c.view.RenderPage(w, view.PageIndex, view.PageData{Authed: true, Current: "home"}); err != nil {
 		http.Error(w, "render: "+err.Error(), http.StatusInternalServerError)
 	}
 }

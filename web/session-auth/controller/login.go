@@ -15,7 +15,7 @@ func (c *Router) RenderLogin(w http.ResponseWriter, r *http.Request) {
 	data := struct{ Registered bool }{
 		Registered: r.URL.Query().Get("registered") == "1",
 	}
-	if err := c.view.RenderPage(w, "login.html", view.PageData{Current: "login", Content: data}); err != nil {
+	if err := c.view.RenderPage(w, view.PageLogin, view.PageData{Current: "login", Content: data}); err != nil {
 		http.Error(w, "render: "+err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -53,7 +53,7 @@ func (c *Router) HandleLogin(w http.ResponseWriter, r *http.Request) {
 func (c *Router) loginErrors(w http.ResponseWriter, msg string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusUnprocessableEntity)
-	if err := c.view.Render(w, "login_errors.html", msg); err != nil {
+	if err := c.view.Render(w, view.FragmentLoginErrors, msg); err != nil {
 		http.Error(w, "render: "+err.Error(), http.StatusInternalServerError)
 	}
 }

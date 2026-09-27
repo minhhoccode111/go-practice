@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"session-auth/entity"
+	"session-auth/view"
 )
 
 func (c *Router) HandleGetMe(w http.ResponseWriter, r *http.Request) {
@@ -14,7 +15,7 @@ func (c *Router) HandleGetMe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := c.view.Render(w, "me.html", u.Email); err != nil {
+	if err := c.view.Render(w, view.FragmentMe, u.Email); err != nil {
 		http.Error(w, "render: "+err.Error(), http.StatusInternalServerError)
 	}
 }
